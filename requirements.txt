@@ -1,0 +1,6 @@
+pygame --pre
+moderngl
+numba
+PyGLM
+# numpy<1.25,>=1.21
+opensimplex[numpy]==0.4.4
