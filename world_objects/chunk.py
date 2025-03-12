@@ -1,9 +1,11 @@
 from settings import *
 from meshes.chunk_mesh import ChunkMesh
 
-'''
+"""
 Class holding the 3D renderable object 
-'''
+"""
+
+
 class Chunk:
     def __init__(self, app):
         self.app = app
@@ -19,7 +21,7 @@ class Chunk:
 
     def build_voxels(self):
         # empty chunk
-        voxels = np.zeros(CHUNK_VOL, dtype='uint8')
+        voxels = np.zeros(CHUNK_VOL, dtype="uint8")
 
         # fill chunk
         for x in range(CHUNK_SIZE):

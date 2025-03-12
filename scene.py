@@ -2,6 +2,7 @@ from settings import *
 import moderngl as mgl
 from world_objects.chunk import Chunk
 
+
 class Scene:
     def __init__(self, app):
         self.app = app

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class BaseMesh:
     def __init__(self):
         # OpenGL context

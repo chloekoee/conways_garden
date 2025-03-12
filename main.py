@@ -7,12 +7,15 @@ from scene import Scene
 from shader_program import ShaderProgram
 from textures import Textures
 
+
 class VoxelEngine:
     def __init__(self):
         pg.init()
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
+        pg.display.gl_set_attribute(
+            pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE
+        )
         ## Set value of 24 bits for depth buffer
         pg.display.gl_set_attribute(pg.GL_DEPTH_SIZE, 24)
 
@@ -22,7 +25,7 @@ class VoxelEngine:
 
         self.ctx.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE | mgl.BLEND)
         ## Enable automatic garbage collection of unused Open GL objects
-        self.ctx.gc_mode = 'auto'
+        self.ctx.gc_mode = "auto"
 
         ## Time keeping
         self.clock = pg.time.Clock()
@@ -49,23 +52,23 @@ class VoxelEngine:
 
         self.delta_time = self.clock.tick()
         self.time = pg.time.get_ticks() * 0.001
-        ## To monitor performance 
-        pg.display.set_caption(f'{self.clock.get_fps() :.0f}')
-
-
+        ## To monitor performance
+        pg.display.set_caption(f"{self.clock.get_fps() :.0f}")
 
     def on_render(self):
-        ## Clear the screen 
+        ## Clear the screen
         self.ctx.clear(color=BG_COLOR)
 
         self.scene.render()
 
-        ## Update display 
+        ## Update display
         pg.display.flip()
 
     def handle_events(self):
         for event in pg.event.get():
-            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
+            if event.type == pg.QUIT or (
+                event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE
+            ):
                 self.is_running = False
 
     def run(self):
@@ -77,6 +80,6 @@ class VoxelEngine:
         sys.exit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = VoxelEngine()
     app.run()
