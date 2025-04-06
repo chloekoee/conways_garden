@@ -28,4 +28,5 @@ class Chunk:
             for z in range(CHUNK_SIZE):
                 for y in range(CHUNK_SIZE):
                     voxels[x + CHUNK_SIZE * z + CHUNK_AREA * y] = x + y + z
+        voxels[0] = 1
         return voxels
