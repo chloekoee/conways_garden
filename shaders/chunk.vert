@@ -33,5 +33,7 @@ void main() {
     int uv_index = gl_VertexID % 6  + (face_id & 1) * 6;
     uv = uv_coords[uv_indices[uv_index]];
     voxel_color = hash31(voxel_id);
+
+    // additional 1.0 used to convert 3D position into 4D homogeneous coordinate
     gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
 }
