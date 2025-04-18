@@ -24,5 +24,8 @@ class Textures:
         )
         texture.anisotropy = 32.0
         texture.build_mipmaps()
+        
+        ## The filter will either show the pixel edges or blur them depending
+        # two flags, GL_NEAREST and GL_LINEAR
         texture.filter = (mgl.NEAREST, mgl.NEAREST)
         return texture

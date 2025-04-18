@@ -2,7 +2,7 @@ from settings import *
 from numba import uint8
 
 """
-Vertex Attributes: [x, y, z, face_id, voxel_id] (each an int 8 --> 1 byte)
+Vertex Attributes: [x, y, z, face_id, voxel_id] (each an np.int64 8 --> 1 byte)
 At any given angle we can only see three faces of a voxel
 18 vertices forms 6 triangles which form three faces of one voxel.
 
@@ -26,8 +26,8 @@ FACE ID is an enum:
 1: bottom
 2: right
 3: left
-4: back
-5: front
+4: front
+5: back
 """
 
 @njit
@@ -85,6 +85,50 @@ def add_data(vertex_data, index, *vertices):
 
     return index
 
+
+
+@njit
+def add_face(fixed_axis: np.int64, base_vector: np.ndarray, odd_winding: bool, vertex_data: np.ndarray, index:np.int64, voxel_id, face_id) -> np.int64:
+    '''
+    Adds vertices for a quad face defined by a fixed axis and a base coordinate.
+    
+              v0 *---* v1
+                /     \
+            v3 *-------*  v2
+    
+
+    Parameters:
+        fixed_axis: The index (0, 1, or 2) of the coordinate (x,y,z) that remains fixed.
+        fixed_value: the base coordinate (1,0,0) if adding right face, (0,1,0) if adding top face
+        odd_winding: Determines which offset set is used (TODO: figure out mathematical term for this)
+        vertex_data: 1D array vertex buffer.
+        index: Running index of vertex_data buffer.
+        voxel_id: The voxel id to pack into each vertex.
+        face_id: The face id (enum) to pack into each vertex.
+        
+    The function creates a quad from 4 vertices using offsets for the unfixed axes and
+    then breaks the quad into 2 triangles by calling add_data.
+    '''
+   
+    offsets = EVEN_OFFSETS if odd_winding else ODD_OFFSETS
+    unfixed_axis = [i for i in range(3) if i != fixed_axis]
+    packed_vertices = []
+
+    for i in range(4):
+        vertex = base_vector.copy()
+        vertex[unfixed_axis[0]] += offsets[i,0]
+        vertex[unfixed_axis[1]] += offsets[i,1]
+        packed_vertices.append(to_uint8(vertex[0], vertex[1], vertex[2], voxel_id, face_id))
+
+    ## the two triangles forming the face.
+    # the first triangle uses v0, v1, v2
+    # the second triangle uses v0, v2, v3
+    index = add_data(vertex_data, index, packed_vertices[0], packed_vertices[1], packed_vertices[2], packed_vertices[0], packed_vertices[2], packed_vertices[3])
+    return index
+    
+
+
+
 @njit
 def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
     """
@@ -103,8 +147,8 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
     for x in range(CHUNK_SIZE):
         for y in range(CHUNK_SIZE):
             for z in range(CHUNK_SIZE):
-
-                ## TODO: WHAT IS THIS
+                
+                ## Calculate global position
                 cx, cy, cz = chunk_pos
                 wx = x + cx * CHUNK_SIZE
                 wy = y + cy * CHUNK_SIZE
@@ -112,7 +156,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
 
 
                 ## unique identifier for voxel within chunk
-                voxel_id = chunk_voxels[x + CHUNK_SIZE * z + CHUNK_AREA * y]
+                voxel_id: int = chunk_voxels[x + CHUNK_SIZE * z + CHUNK_AREA * y]
                 if not voxel_id:
                     continue
 
@@ -121,65 +165,79 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                 # 1 unit away from the voxels x,y,z, in that face direction, not projected if bottom, left or back)
                 # note that this face is also represented by two triangles
 
+                
+                # top face (face_id 0): y is fixed at y+1.
+                if is_void((x, y+1, z), (wx, wy+1, wz), world_voxels):
+                    index = add_face(
+                        fixed_axis=1,
+                        base_vector=np.array([x, y+1, z], dtype=np.int64),
+                        odd_winding=False,
+                        vertex_data=vertex_data,
+                        index=index,
+                        voxel_id=voxel_id,
+                        face_id=0
+                    )
 
-                # top face
-                if is_void((x, y + 1, z), (wx, wy + 1, wz), world_voxels):
-                    # format: x, y, z, voxel_id, face_id
-                    v0 = to_uint8(x    , y + 1, z    , voxel_id, 0)
-                    v1 = to_uint8(x + 1, y + 1, z    , voxel_id, 0)
-                    v2 = to_uint8(x + 1, y + 1, z + 1, voxel_id, 0)
-                    v3 = to_uint8(x    , y + 1, z + 1, voxel_id, 0)
 
-                    index = add_data(vertex_data, index, v0, v3, v2, v0, v2, v1)
+                # left face (face_id 3): x is fixed at x.
+                if is_void((x-1, y, z), (wx-1, wy, wz), world_voxels):
+                    index = add_face(
+                        fixed_axis=0,
+                        base_vector=np.array([x, y, z], dtype=np.int64),
+                        odd_winding=False,
+                        vertex_data=vertex_data,
+                        index=index,
+                        voxel_id=voxel_id,
+                        face_id=3
+                    )
 
-                # bottom face
-                if is_void((x, y - 1, z), (wx, wy - 1, wz), world_voxels):
+                # back face (face_id 5): z is fixed at z.
+                # Here we use odd_winding=True to get the desired ordering.
+                if is_void((x, y, z-1), (wx, wy, wz-1), world_voxels):
+                    index = add_face(
+                        fixed_axis=2,
+                        base_vector=np.array([x, y, z], dtype=np.int64),
+                        odd_winding=False,
+                        vertex_data=vertex_data,
+                        index=index,
+                        voxel_id=voxel_id,
+                        face_id=5
+                    )
 
-                    v0 = to_uint8(x    , y, z    , voxel_id, 1)
-                    v1 = to_uint8(x + 1, y, z    , voxel_id, 1)
-                    v2 = to_uint8(x + 1, y, z + 1, voxel_id, 1)
-                    v3 = to_uint8(x    , y, z + 1, voxel_id, 1)
+                # right face (face_id 2): x is fixed at x+1.
+                if is_void((x+1, y, z), (wx+1, wy, wz), world_voxels):
+                    index = add_face(
+                        fixed_axis=0,
+                        base_vector=np.array([x+1, y, z], dtype=np.int64),
+                        odd_winding=True,
+                        vertex_data=vertex_data,
+                        index=index,
+                        voxel_id=voxel_id,
+                        face_id=2
+                    )
 
-                    index = add_data(vertex_data, index, v0, v2, v3, v0, v1, v2)
+                # front face (face_id 4): z is fixed at z+1.
+                if is_void((x, y, z+1), (wx, wy, wz+1), world_voxels):
+                    index = add_face(
+                        fixed_axis=2,
+                        base_vector=np.array([x, y, z+1], dtype=np.int64),
+                        odd_winding=True, ## this has odd_winding due to right hand rule
+                        vertex_data=vertex_data,
+                        index=index,
+                        voxel_id=voxel_id,
+                        face_id=4
+                    )
 
-                # right face
-                if is_void((x + 1, y, z), (wx + 1, wy, wz), world_voxels):
-
-                    v0 = to_uint8(x + 1, y    , z    , voxel_id, 2)
-                    v1 = to_uint8(x + 1, y + 1, z    , voxel_id, 2)
-                    v2 = to_uint8(x + 1, y + 1, z + 1, voxel_id, 2)
-                    v3 = to_uint8(x + 1, y    , z + 1, voxel_id, 2)
-
-                    index = add_data(vertex_data, index, v0, v1, v2, v0, v2, v3)
-
-                # left face
-                if is_void((x - 1, y, z), (wx - 1, wy, wz), world_voxels):
-
-                    v0 = to_uint8(x, y    , z    , voxel_id, 3)
-                    v1 = to_uint8(x, y + 1, z    , voxel_id, 3)
-                    v2 = to_uint8(x, y + 1, z + 1, voxel_id, 3)
-                    v3 = to_uint8(x, y    , z + 1, voxel_id, 3)
-
-                    index = add_data(vertex_data, index, v0, v2, v1, v0, v3, v2)
-
-                # back face
-                if is_void((x, y, z - 1), (wx, wy, wz - 1), world_voxels):
-
-                    v0 = to_uint8(x,     y,     z, voxel_id, 4)
-                    v1 = to_uint8(x,     y + 1, z, voxel_id, 4)
-                    v2 = to_uint8(x + 1, y + 1, z, voxel_id, 4)
-                    v3 = to_uint8(x + 1, y,     z, voxel_id, 4)
-
-                    index = add_data(vertex_data, index, v0, v1, v2, v0, v2, v3)
-
-                # front face
-                if is_void((x, y, z + 1), (wx, wy, wz + 1), world_voxels):
-
-                    v0 = to_uint8(x    , y    , z + 1, voxel_id, 5)
-                    v1 = to_uint8(x    , y + 1, z + 1, voxel_id, 5)
-                    v2 = to_uint8(x + 1, y + 1, z + 1, voxel_id, 5)
-                    v3 = to_uint8(x + 1, y    , z + 1, voxel_id, 5)
-
-                    index = add_data(vertex_data, index, v0, v2, v1, v0, v3, v2)
+                # bottom face (face_id 1): y is fixed at y.
+                if is_void((x, y-1, z), (wx, wy-1, wz), world_voxels):
+                    index = add_face(
+                        fixed_axis=1,
+                        base_vector=np.array([x, y, z], dtype=np.int64),
+                        odd_winding=True,
+                        vertex_data=vertex_data,
+                        index=index,
+                        voxel_id=voxel_id,
+                        face_id=1
+                    )
 
     return vertex_data[:index + 1]

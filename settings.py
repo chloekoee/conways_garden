@@ -40,3 +40,18 @@ MOUSE_SENSITIVITY = 0.002
 
 # colors
 BG_COLOR = glm.vec3(0.1, 0.16, 0.25)
+
+# offets for calculating vertex position
+EVEN_OFFSETS = np.array([
+    [0,0],
+    [1,0],
+    [1,1],
+    [0,1]
+])
+
+ODD_OFFSETS = np.array([
+    [0,0],
+    [0,1],
+    [1,1],
+    [1,0]
+])
