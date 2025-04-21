@@ -17,8 +17,8 @@ out vec2 uv;
 // to facilitate simple assignment of triangle corners to texture (square) corners,
 // let us define all possible uv coordinates to assing here
 const vec2 uv_coords[4] = vec2[4](
-    vec2(0, 1), vec2(0, 0),
-    vec2(1, 0), vec2(1, 1)
+    vec2(0,0), vec2(0, 1),
+    vec2(1,1), vec2(1, 0)
 );
 
 // 
