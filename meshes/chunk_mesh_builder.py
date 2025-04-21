@@ -31,8 +31,8 @@ FACE ID is an enum:
 """
 
 @njit
-def to_uint8(x, y, z, voxel_id, face_id):
-    return uint8(x), uint8(y), uint8(z), uint8(voxel_id), uint8(face_id)
+def to_uint8(x, y, z, voxel_id, face_id, ao_id):
+    return uint8(x), uint8(y), uint8(z), uint8(voxel_id), uint8(face_id), uint8(ao_id)
 
 @njit
 def get_chunk_index(world_voxel_pos):
@@ -86,9 +86,32 @@ def add_data(vertex_data, index, *vertices):
     return index
 
 
+@njit
+def get_ao_corrections(fixed_axis: np.int64, world_voxels, local_voxel_pos, world_voxel_pos, flip = False):
+    neighbours = []
+
+    x, y, z = local_voxel_pos
+    wx, wy, wz = world_voxel_pos
+
+    col = (fixed_axis + 1)%3 if flip else (fixed_axis + 2)%3
+    row = (fixed_axis + 2)%3 if flip else (fixed_axis + 1)%3
+
+    for neighbour in AO_NEIGHBOURHOOD:
+        v = [0,0,0]
+        v[row] = neighbour[1]
+        v[col] = neighbour[0]
+        neighbours.append(is_void((x+v[0], y+v[1], z+v[2]), (wx+v[0], wy+v[1],wz+v[2]), world_voxels))
+
+    a = sum([neighbours[7]] + neighbours[0:2])
+    b = sum(neighbours[1:4])
+    c = sum(neighbours[3:6])
+    d = sum(neighbours[5:8])
+
+    return a,b,c,d
+
 
 @njit
-def add_face(fixed_axis: np.int64, base_vector: np.ndarray, is_right_group: bool, vertex_data: np.ndarray, index:np.int64, voxel_id, face_id) -> np.int64:
+def add_face(fixed_axis: np.int64, base_vector: np.ndarray, is_right_group: bool, vertex_data: np.ndarray, index:np.int64, voxel_id, face_id, ao_values) -> np.int64:
     '''
     Adds vertices for a quad face defined by a fixed axis and a base coordinate.
     
@@ -118,7 +141,7 @@ def add_face(fixed_axis: np.int64, base_vector: np.ndarray, is_right_group: bool
         vertex = base_vector.copy()
         vertex[(k+1)%3] += offsets[i,0]
         vertex[(k+2)%3] += offsets[i,1]
-        packed_vertices.append(to_uint8(vertex[0], vertex[1], vertex[2], voxel_id, face_id))
+        packed_vertices.append(to_uint8(vertex[0], vertex[1], vertex[2], voxel_id, face_id, ao_values[i]))
 
     ## the two triangles forming the face.
     # the first triangle uses v0, v1, v2
@@ -167,6 +190,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
 
                 # right face (face_id 2): x is fixed at x+1.
                 if is_void((x+1, y, z), (wx+1, wy, wz), world_voxels):
+                    ao_values = get_ao_corrections(0, world_voxels, (x+1, y, z), (wx+1, wy, wz))
                     index = add_face(
                         fixed_axis=0,
                         base_vector=np.array([x+1, y, z], dtype=np.int64),
@@ -174,11 +198,14 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
-                        face_id=2
+                        face_id=2,
+                        ao_values = ao_values
                     )
                 
                 # top face (face_id 0): y is fixed at y+1.
                 if is_void((x, y+1, z), (wx, wy+1, wz), world_voxels):
+                    ao_values = get_ao_corrections(1, world_voxels, (x, y+1, z), (wx, wy+1, wz))
+
                     index = add_face(
                         fixed_axis=1,
                         base_vector=np.array([x, y+1, z], dtype=np.int64),
@@ -186,25 +213,27 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
-                        face_id=0
+                        face_id=0,
+                        ao_values = ao_values
                     )
-
 
                 # front face (face_id 4): z is fixed at z+1.
                 if is_void((x, y, z+1), (wx, wy, wz+1), world_voxels):
+                    ao_values = get_ao_corrections(2, world_voxels, (x, y+1, z), (wx, wy+1, wz))
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z+1], dtype=np.int64),
-                        is_right_group=True, ## this has is_right_group due to right hand rule
+                        is_right_group=True,
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
-                        face_id=4
+                        face_id=5,
+                        ao_values=ao_values
                     )
-
 
                 # left face (face_id 3): x is fixed at x.
                 if is_void((x-1, y, z), (wx-1, wy, wz), world_voxels):
+                    ao_values = get_ao_corrections(0, world_voxels,(x-1, y, z), (wx-1, wy, wz), flip=True)
                     index = add_face(
                         fixed_axis=0,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -212,11 +241,13 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
-                        face_id=3
+                        face_id=3,
+                        ao_values=ao_values
                     )
 
                 # bottom face (face_id 1): y is fixed at y.
                 if is_void((x, y-1, z), (wx, wy-1, wz), world_voxels):
+                    ao_values = get_ao_corrections(1, world_voxels,(x, y-1, z), (wx, wy-1, wz))
                     index = add_face(
                         fixed_axis=1,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -224,12 +255,13 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
-                        face_id=1
+                        face_id=1,
+                        ao_values=ao_values
                     )
 
                 # back face (face_id 5): z is fixed at z.
-                # Here we use is_right_group=True to get the desired ordering.
                 if is_void((x, y, z-1), (wx, wy, wz-1), world_voxels):
+                    ao_values = get_ao_corrections(2, world_voxels,(x, y, z-1), (wx, wy, wz-1), flip=True)
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -237,7 +269,8 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
-                        face_id=5
+                        face_id=4,
+                        ao_values=ao_values
                     )
 
 
