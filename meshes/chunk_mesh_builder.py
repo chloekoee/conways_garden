@@ -88,7 +88,7 @@ def add_data(vertex_data, index, *vertices):
 
 
 @njit
-def add_face(fixed_axis: np.int64, base_vector: np.ndarray, odd_winding: bool, vertex_data: np.ndarray, index:np.int64, voxel_id, face_id) -> np.int64:
+def add_face(fixed_axis: np.int64, base_vector: np.ndarray, winding20: bool, vertex_data: np.ndarray, index:np.int64, voxel_id, face_id) -> np.int64:
     '''
     Adds vertices for a quad face defined by a fixed axis and a base coordinate.
     
@@ -100,7 +100,7 @@ def add_face(fixed_axis: np.int64, base_vector: np.ndarray, odd_winding: bool, v
     Parameters:
         fixed_axis: The index (0, 1, or 2) of the coordinate (x,y,z) that remains fixed.
         fixed_value: the base coordinate (1,0,0) if adding right face, (0,1,0) if adding top face
-        odd_winding: Determines which offset set is used (TODO: figure out mathematical term for this)
+        winding20: Determines which offset set is used (TODO: figure out mathematical term for this)
         vertex_data: 1D array vertex buffer.
         index: Running index of vertex_data buffer.
         voxel_id: The voxel id to pack into each vertex.
@@ -110,10 +110,11 @@ def add_face(fixed_axis: np.int64, base_vector: np.ndarray, odd_winding: bool, v
     then breaks the quad into 2 triangles by calling add_data.
     '''
    
-    offsets = EVEN_OFFSETS if odd_winding else ODD_OFFSETS
+    offsets = OFFSETS_20 if winding20 else OFFSETS_13
     unfixed_axis = [i for i in range(3) if i != fixed_axis]
     packed_vertices = []
 
+    # here the 4 is hardcoded and thats bad coding practice mr chloe 
     for i in range(4):
         vertex = base_vector.copy()
         vertex[unfixed_axis[0]] += offsets[i,0]
@@ -171,7 +172,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                     index = add_face(
                         fixed_axis=1,
                         base_vector=np.array([x, y+1, z], dtype=np.int64),
-                        odd_winding=False,
+                        winding20=False,
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
@@ -184,7 +185,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                     index = add_face(
                         fixed_axis=0,
                         base_vector=np.array([x, y, z], dtype=np.int64),
-                        odd_winding=False,
+                        winding20=False,
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
@@ -192,12 +193,12 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                     )
 
                 # back face (face_id 5): z is fixed at z.
-                # Here we use odd_winding=True to get the desired ordering.
+                # Here we use winding20=True to get the desired ordering.
                 if is_void((x, y, z-1), (wx, wy, wz-1), world_voxels):
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z], dtype=np.int64),
-                        odd_winding=False,
+                        winding20=False,
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
@@ -209,7 +210,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                     index = add_face(
                         fixed_axis=0,
                         base_vector=np.array([x+1, y, z], dtype=np.int64),
-                        odd_winding=True,
+                        winding20=True,
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
@@ -221,7 +222,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z+1], dtype=np.int64),
-                        odd_winding=True, ## this has odd_winding due to right hand rule
+                        winding20=True, ## this has winding20 due to right hand rule
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
@@ -233,7 +234,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                     index = add_face(
                         fixed_axis=1,
                         base_vector=np.array([x, y, z], dtype=np.int64),
-                        odd_winding=True,
+                        winding20=True,
                         vertex_data=vertex_data,
                         index=index,
                         voxel_id=voxel_id,
