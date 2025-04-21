@@ -57,6 +57,9 @@ LH_OFFSET = np.array([
 ])
 
 # ambient occlusion offsets
+# if we fix one axis, then iterate through all neighbors
+# anti-clockwise, the offsets we use to obtain these neighbours are 
+# as below
 AO_NEIGHBOURHOOD = np.array([
     # rows columns
     [-1,-1],

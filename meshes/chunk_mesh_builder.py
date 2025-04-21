@@ -89,11 +89,12 @@ def add_data(vertex_data, index, *vertices):
 @njit
 def get_ao_corrections(fixed_axis: np.int64, world_voxels, local_voxel_pos, world_voxel_pos, flip = False):
     neighbours = []
+    reverse = False
 
     x, y, z = local_voxel_pos
     wx, wy, wz = world_voxel_pos
 
-    col = (fixed_axis + 1)%3 if flip else (fixed_axis + 2)%3
+    col = (fixed_axis + 1)%3 if flip else (fixed_axis + 2)%3 # if fixed axis = 0, col = 2, row = 1 for not flipped
     row = (fixed_axis + 2)%3 if flip else (fixed_axis + 1)%3
 
     for neighbour in AO_NEIGHBOURHOOD:
@@ -107,11 +108,14 @@ def get_ao_corrections(fixed_axis: np.int64, world_voxels, local_voxel_pos, worl
     c = sum(neighbours[3:6])
     d = sum(neighbours[5:8])
 
-    return a,b,c,d
+    if a+c > b+d:
+        reverse = True
+
+    return (a,b,c,d), reverse
 
 
 @njit
-def add_face(fixed_axis: np.int64, base_vector: np.ndarray, is_right_group: bool, vertex_data: np.ndarray, index:np.int64, voxel_id, face_id, ao_values) -> np.int64:
+def add_face(fixed_axis: np.int64, base_vector: np.ndarray, is_right_group: bool, vertex_data: np.ndarray, index:np.int64, voxel_id, face_id, ao_values, reverse) -> np.int64:
     '''
     Adds vertices for a quad face defined by a fixed axis and a base coordinate.
     
@@ -146,7 +150,11 @@ def add_face(fixed_axis: np.int64, base_vector: np.ndarray, is_right_group: bool
     ## the two triangles forming the face.
     # the first triangle uses v0, v1, v2
     # the second triangle uses v0, v2, v3
-    index = add_data(vertex_data, index, packed_vertices[0], packed_vertices[1], packed_vertices[2], packed_vertices[0], packed_vertices[2], packed_vertices[3])
+    if not reverse:
+        index = add_data(vertex_data, index, packed_vertices[0], packed_vertices[1], packed_vertices[2], packed_vertices[0], packed_vertices[2], packed_vertices[3])
+    else:
+        index = add_data(vertex_data, index, packed_vertices[3], packed_vertices[0], packed_vertices[1], packed_vertices[3], packed_vertices[1], packed_vertices[2])
+    
     return index
     
 
@@ -190,7 +198,7 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
 
                 # right face (face_id 2): x is fixed at x+1.
                 if is_void((x+1, y, z), (wx+1, wy, wz), world_voxels):
-                    ao_values = get_ao_corrections(0, world_voxels, (x+1, y, z), (wx+1, wy, wz))
+                    ao_values, reverse = get_ao_corrections(0, world_voxels, (x+1, y, z), (wx+1, wy, wz))
                     index = add_face(
                         fixed_axis=0,
                         base_vector=np.array([x+1, y, z], dtype=np.int64),
@@ -199,12 +207,13 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         index=index,
                         voxel_id=voxel_id,
                         face_id=2,
-                        ao_values = ao_values
+                        ao_values = ao_values, 
+                        reverse=reverse
                     )
                 
                 # top face (face_id 0): y is fixed at y+1.
                 if is_void((x, y+1, z), (wx, wy+1, wz), world_voxels):
-                    ao_values = get_ao_corrections(1, world_voxels, (x, y+1, z), (wx, wy+1, wz))
+                    ao_values, reverse = get_ao_corrections(1, world_voxels, (x, y+1, z), (wx, wy+1, wz))
 
                     index = add_face(
                         fixed_axis=1,
@@ -214,12 +223,13 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         index=index,
                         voxel_id=voxel_id,
                         face_id=0,
-                        ao_values = ao_values
+                        ao_values = ao_values,
+                        reverse=reverse
                     )
 
                 # front face (face_id 4): z is fixed at z+1.
                 if is_void((x, y, z+1), (wx, wy, wz+1), world_voxels):
-                    ao_values = get_ao_corrections(2, world_voxels, (x, y+1, z), (wx, wy+1, wz))
+                    ao_values, reverse = get_ao_corrections(2, world_voxels, (x, y+1, z), (wx, wy+1, wz))
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z+1], dtype=np.int64),
@@ -228,12 +238,13 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         index=index,
                         voxel_id=voxel_id,
                         face_id=5,
-                        ao_values=ao_values
+                        ao_values=ao_values,
+                        reverse = reverse,
                     )
 
                 # left face (face_id 3): x is fixed at x.
                 if is_void((x-1, y, z), (wx-1, wy, wz), world_voxels):
-                    ao_values = get_ao_corrections(0, world_voxels,(x-1, y, z), (wx-1, wy, wz), flip=True)
+                    ao_values, reverse = get_ao_corrections(0, world_voxels,(x-1, y, z), (wx-1, wy, wz), flip=True)
                     index = add_face(
                         fixed_axis=0,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -242,12 +253,13 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         index=index,
                         voxel_id=voxel_id,
                         face_id=3,
-                        ao_values=ao_values
+                        ao_values=ao_values,
+                        reverse=reverse
                     )
 
                 # bottom face (face_id 1): y is fixed at y.
                 if is_void((x, y-1, z), (wx, wy-1, wz), world_voxels):
-                    ao_values = get_ao_corrections(1, world_voxels,(x, y-1, z), (wx, wy-1, wz))
+                    ao_values, reverse = get_ao_corrections(1, world_voxels,(x, y-1, z), (wx, wy-1, wz))
                     index = add_face(
                         fixed_axis=1,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -256,12 +268,13 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         index=index,
                         voxel_id=voxel_id,
                         face_id=1,
-                        ao_values=ao_values
+                        ao_values=ao_values,
+                        reverse=reverse
                     )
 
                 # back face (face_id 5): z is fixed at z.
                 if is_void((x, y, z-1), (wx, wy, wz-1), world_voxels):
-                    ao_values = get_ao_corrections(2, world_voxels,(x, y, z-1), (wx, wy, wz-1), flip=True)
+                    ao_values, reverse = get_ao_corrections(2, world_voxels,(x, y, z-1), (wx, wy, wz-1), flip=True)
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -270,9 +283,9 @@ def build_chunk_mesh(chunk_voxels, format_size, chunk_pos, world_voxels):
                         index=index,
                         voxel_id=voxel_id,
                         face_id=4,
-                        ao_values=ao_values
+                        ao_values=ao_values,
+                        reverse=reverse
                     )
-
 
 
     return vertex_data[:index + 1]
