@@ -14,6 +14,8 @@ class ShaderProgram:
     def set_uniforms_on_init(self):
         self.chunk["m_proj"].write(self.player.m_proj)
         self.chunk["m_model"].write(glm.mat4())
+        self.chunk["face_textures"].value = (0, 1, 2, 3, 4, 5)
+
 
     def update(self):
         self.chunk["m_view"].write(self.player.m_view)

@@ -2,30 +2,42 @@ import pygame as pg
 import moderngl as mgl
 
 
+import pygame as pg
+import moderngl as mgl
+
 class Textures:
     def __init__(self, app):
         self.app = app
         self.ctx = app.ctx
 
-        # load texture
-        self.texture_0 = self.load("frame.png")
-
-        # assign texture unit
-        self.texture_0.use(location=0)
+        # List of filenames with one texture per face.
+        # Update these file names as appropriate.
+        face_files = [
+            "top.png",    # face_id 0
+            "bottom.png", # face_id 1
+            "right.png",  # face_id 2
+            "leftt.png",   # face_id 3
+            "back.png",    # face_id 4
+            "front.png"  # face_id 5
+        ]
+        
+        self.face_textures = []
+        for i, file in enumerate(face_files):
+            tex = self.load(file)
+            # Bind each to its corresponding texture unit (0 to 5)
+            tex.use(location=i)
+            self.face_textures.append(tex)
 
     def load(self, file_name):
-        texture = pg.image.load(f"assets/{file_name}")
-        texture = pg.transform.flip(texture, flip_x=True, flip_y=False)
-
+        surface = pg.image.load(f"assets/{file_name}")
+        # Flip texture vertically (adjust flip_x/flip_y as needed)
+        surface = pg.transform.flip(surface, flip_x=True, flip_y=False)
         texture = self.ctx.texture(
-            size=texture.get_size(),
+            size=surface.get_size(),
             components=4,
-            data=pg.image.tostring(texture, "RGBA", False),
+            data=pg.image.tostring(surface, "RGBA", False),
         )
         texture.anisotropy = 32.0
         texture.build_mipmaps()
-        
-        ## The filter will either show the pixel edges or blur them depending
-        # two flags, GL_NEAREST and GL_LINEAR
         texture.filter = (mgl.NEAREST, mgl.NEAREST)
         return texture
