@@ -8,6 +8,7 @@ class ShaderProgram:
         self.player = app.player
         # -------- shaders -------- #
         self.chunk = self.get_program(shader_name="chunk")
+        self.voxel_marker = self.get_program(shader_name="voxel_marker")
         # ------------------------- #
         self.set_uniforms_on_init()
 
@@ -16,9 +17,13 @@ class ShaderProgram:
         self.chunk["m_model"].write(glm.mat4())
         self.chunk["face_textures"].value = (0, 1, 2, 3, 4, 5)
 
+        self.voxel_marker["m_proj"].write(self.player.m_proj)
+        self.voxel_marker["m_model"].write(glm.mat4())
+        self.voxel_marker["u_texture_0"] = 0
 
     def update(self):
         self.chunk["m_view"].write(self.player.m_view)
+        self.voxel_marker["m_view"].write(self.player.m_view)
 
     def get_program(self, shader_name):
         with open(f"shaders/{shader_name}.vert") as file:

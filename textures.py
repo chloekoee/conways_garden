@@ -38,6 +38,10 @@ class Textures:
             tex.use(location=i)
             self.face_textures.append(tex)
 
+        # voxel marker texture
+        self.texture_0 = self.load("frame.png")
+        self.texture_0.use(location=0)
+
     def load(self, file_name):
         surface = pg.image.load(f"assets/{file_name}")
         # Flip texture vertically (adjust flip_x/flip_y as needed)
