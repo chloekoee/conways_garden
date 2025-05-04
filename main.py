@@ -37,6 +37,7 @@ class VoxelEngine:
 
         ## Flag for game loop
         self.is_running = True
+        self.paused = False  # Add a paused flag
         self.on_init()
 
     def on_init(self):
@@ -66,16 +67,21 @@ class VoxelEngine:
 
     def handle_events(self):
         for event in pg.event.get():
-            if event.type == pg.QUIT or (
-                event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE
-            ):
+            if event.type == pg.QUIT:
                 self.is_running = False
-            self.player.handle_event(event=event)
+            elif event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                self.paused = not self.paused
+                pg.mouse.set_visible(self.paused)
+                pg.event.set_grab(not self.paused)
+            # Only handle player events if not paused
+            if not self.paused:
+                self.player.handle_event(event=event)
 
     def run(self):
         while self.is_running:
             self.handle_events()
-            self.update()
+            if not self.paused:
+                self.update()
             self.on_render()
         pg.quit()
         sys.exit()

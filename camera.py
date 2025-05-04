@@ -35,7 +35,6 @@ class Camera:
 
     def rotate_pitch(self, delta_y):
         self.pitch -= delta_y
-        # self.pitch = glm.clamp(self.pitch, -PITCH_MAX, PITCH_MAX)
 
     def rotate_yaw(self, delta_x):
         self.yaw += delta_x
