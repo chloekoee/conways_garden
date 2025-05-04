@@ -5,6 +5,7 @@ import moderngl as mgl
 import pygame as pg
 import moderngl as mgl
 
+
 class Textures:
     def __init__(self, app):
         self.app = app
@@ -22,14 +23,14 @@ class Textures:
         # ]
 
         face_files = [
-            "frame.png",    # face_id 0
-            "frame.png", # face_id 1
+            "frame.png",  # face_id 0
+            "frame.png",  # face_id 1
             "frame.png",  # face_id 2
-            "frame.png",   # face_id 3
-            "frame.png",    # face_id 4
-            "frame.png"  # face_id 5
+            "frame.png",  # face_id 3
+            "frame.png",  # face_id 4
+            "frame.png",  # face_id 5
         ]
-        
+
         self.face_textures = []
         for i, file in enumerate(face_files):
             tex = self.load(file)

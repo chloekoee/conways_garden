@@ -143,7 +143,7 @@ def add_face(
     ao_values,
     front=False,
 ) -> np.int64:
-    '''
+    """
     Adds vertices for a quad face defined by a fixed axis and a base coordinate.
     
               v0 *---* v1
@@ -162,7 +162,7 @@ def add_face(
 
     The function creates a quad from 4 vertices using offsets for the unfixed axes and
     then breaks the quad into 2 triangles by calling add_data.
-    '''
+    """
     packed_vertices = []
     k = [i for i in range(3) if i != fixed_axis]
     for i in range(4):
