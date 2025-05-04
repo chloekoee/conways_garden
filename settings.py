@@ -45,32 +45,72 @@ MOUSE_SENSITIVITY = 0.002
 BG_COLOR = glm.vec3(0.1, 0.16, 0.25)
 
 # offets for calculating vertex position
-RH_OFFSETS = np.array([
+TOP = np.array([
+    [1,1],
+    [1,0],
+    [0,0],
+    [0,1],
+])
+
+BOTTOM = np.array([
+    [0,1],
+    [0,0],
+    [1,0],
+    [1,1]
+])
+
+RIGHT = np.array([
+    [1,1],
+    [0,1],
+    [0,0],
+    [1,0]
+])
+
+LEFT = np.array([
+    [1,0],
+    [0,0],
+    [0,1],
+    [1,1]
+])
+
+FRONT = np.array([
+    [0,1],
     [0,0],
     [1,0],
     [1,1],
+])
+
+BACK = np.array([
+    [1,1],
+    [1,0],
+    [0,0],
     [0,1]
 ])
 
-LH_OFFSET = np.array([
-    [0,0],
-    [0,1],
-    [1,1],
-    [1,0]
-])
+
 
 # ambient occlusion offsets
 # if we fix one axis, then iterate through all neighbors
 # anti-clockwise, the offsets we use to obtain these neighbours are 
 # as below
-AO_NEIGHBOURHOOD = np.array([
-    # rows columns
+AO_NEIGHBOURHOOD_EVEN = np.array([
+    [1,  1],
+    [0,  1],
+    [-1, 1],
+    [-1, 0],
+    [-1,-1],
+    [0, -1],
+    [1, -1],
+    [1,  0]
+])
+
+AO_NEIGHBOURHOOD_ODD = np.array([
+    [1, -1],
+    [0, -1],
     [-1,-1],
     [-1, 0],
     [-1, 1],
     [0,  1],
     [1,  1],
     [1,  0],
-    [1, -1],
-    [0, -1]
 ])

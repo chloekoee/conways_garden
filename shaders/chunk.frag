@@ -20,7 +20,7 @@ void main() {
     vec3 tex_col = texture(face_textures[f_face_id], uv).rgb;
     tex_col = pow(tex_col, gamma);
 
-    // tex_col.rgb *= voxel_color;
+    tex_col.rgb *= voxel_color;
     //colouring everything white
     // tex_col = tex_col * 0.001 + vec3(1);
     tex_col *= shading;
