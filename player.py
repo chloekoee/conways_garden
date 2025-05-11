@@ -39,3 +39,13 @@ class Player(Camera):
             self.move_up(vel)
         if key_state[pg.K_LSHIFT]:
             self.move_down(vel)
+
+        rot_amount = KEY_ROT_SPEED
+        if key_state[pg.K_LEFT]:
+            self.rotate_yaw(delta_x=-rot_amount)
+        if key_state[pg.K_RIGHT]:
+            self.rotate_yaw(delta_x=rot_amount)
+        if key_state[pg.K_UP]:
+            self.rotate_pitch(delta_y=-rot_amount)
+        if key_state[pg.K_DOWN]:
+            self.rotate_pitch(delta_y=rot_amount)
