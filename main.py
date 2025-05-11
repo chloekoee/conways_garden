@@ -74,8 +74,8 @@ class VoxelEngine:
                 pg.mouse.set_visible(self.paused)
                 pg.event.set_grab(not self.paused)
             # Only handle player events if not paused
-            if not self.paused:
-                self.player.handle_event(event=event)
+            # if not self.paused:
+            #     self.player.handle_event(event=event)
 
     def run(self):
         while self.is_running:
