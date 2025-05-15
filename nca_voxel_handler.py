@@ -1,5 +1,6 @@
 from settings import *
 
+
 class NCAVoxelHandler:
     def __init__(self, nca):
         self.app = nca.app
@@ -10,14 +11,14 @@ class NCAVoxelHandler:
         self.voxel_position = None
 
         ## this may be used for building/adding blocks
-        self.voxel_normal = glm.ivec3(0) #None
+        self.voxel_normal = glm.ivec3(0)  # None
 
     def remove_voxel(self):
         if self.target_found:
             x, y, z = self.voxel_position
-                # Remove voxel by setting its alpha channel to 0 if it is filled
-            if self.nca.state[x,y,z,3] > 0:
-                self.nca.state[x,y,z, 3] = 0
+            # Remove voxel by setting its alpha channel to 0 if it is filled
+            if self.nca.state[x, y, z, 3] > 0:
+                self.nca.state[x, y, z, 3] = 0
                 self.nca.mesh.rebuild()
             self.target_found = False
 
@@ -28,7 +29,9 @@ class NCAVoxelHandler:
         x, y, z = position
         nca_tensor = self.nca.state
         x_dim, y_dim, z_dim = nca_tensor[..., 3].shape
-        if (0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim) and nca_tensor[x, y, z, 3] > 0:
+        if (0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim) and nca_tensor[
+            x, y, z, 3
+        ] > 0:
             return True
         return False
 

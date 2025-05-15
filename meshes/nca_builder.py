@@ -14,19 +14,30 @@ FACE ID is an enum:
 
 # @njit
 def to_uint8(x, y, z, r, g, b, a, face_id, ao_id):
-    return uint8(x), uint8(y), uint8(z), uint8(r), uint8(g), uint8(b), uint8(a), uint8(face_id), uint8(ao_id)
+    return (
+        uint8(x),
+        uint8(y),
+        uint8(z),
+        uint8(r),
+        uint8(g),
+        uint8(b),
+        uint8(a),
+        uint8(face_id),
+        uint8(ao_id),
+    )
+
 
 # @njit
 def is_void(position, nca_tensor, shape):
     x, y, z = position
     x_dim, y_dim, z_dim = shape
-    if (0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim):
+    if 0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim:
         # if in bounds and the neighbouring alpha value is false
-        if nca_tensor[x, y, z, 3] == 0: 
+        if nca_tensor[x, y, z, 3] == 0:
             return True
         # otherwise neighbouring alpha value is alive then don't render this face
         return False
-    # if out of bounds (no alpha value) then this is an outer face 
+    # if out of bounds (no alpha value) then this is an outer face
     return True
 
 
@@ -41,7 +52,7 @@ def add_data(vertex_data, index, *vertices):
 
 # @njit
 def get_ao(position, nca_tensor, shape, fixed_axis, even=True, flip=False):
-    x,y,z = position
+    x, y, z = position
     neighbours = []
 
     row = (fixed_axis + 2) % 3 if flip else (fixed_axis + 1) % 3
@@ -53,7 +64,7 @@ def get_ao(position, nca_tensor, shape, fixed_axis, even=True, flip=False):
         v = [0, 0, 0]
         v[row] = n[0]
         v[col] = n[1]
-        neighbours.append(is_void((x+v[0], y+v[1], z+v[2]), nca_tensor, shape))
+        neighbours.append(is_void((x + v[0], y + v[1], z + v[2]), nca_tensor, shape))
 
     a = sum([neighbours[7]] + neighbours[0:2])
     b = sum(neighbours[1:4])
@@ -90,7 +101,9 @@ def add_face(
         vertex = base_vector.copy()
         vertex[k[0]] += offsets[i, 0]
         vertex[k[1]] += offsets[i, 1]
-        v.append(to_uint8(vertex[0], vertex[1], vertex[2], *rgba, face_id, ao_values[i]))
+        v.append(
+            to_uint8(vertex[0], vertex[1], vertex[2], *rgba, face_id, ao_values[i])
+        )
 
     # first triangle uses v0, v1, v2,  second triangle uses v0, v2, v3
     return add_data(vertex_data, index, v[0], v[1], v[2], v[0], v[2], v[3])
@@ -148,7 +161,14 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
 
                 # Front face (face_id 5): sample neighbor at z+1
                 if is_void((x, y, z + 1), nca_tensor, shape):
-                    ao_values = get_ao((x, y, z + 1), nca_tensor, shape, fixed_axis=2, even=False, flip=True)
+                    ao_values = get_ao(
+                        (x, y, z + 1),
+                        nca_tensor,
+                        shape,
+                        fixed_axis=2,
+                        even=False,
+                        flip=True,
+                    )
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z + 1], dtype=np.int64),
@@ -162,7 +182,9 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
 
                 # Left face (face_id 3): sample neighbor at x-1
                 if is_void((x - 1, y, z), nca_tensor, shape):
-                    ao_values = get_ao((x - 1, y, z), nca_tensor, shape, fixed_axis=0, even=False)
+                    ao_values = get_ao(
+                        (x - 1, y, z), nca_tensor, shape, fixed_axis=0, even=False
+                    )
                     index = add_face(
                         fixed_axis=0,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -176,7 +198,9 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
 
                 # Bottom face (face_id 1): sample neighbor at y-1
                 if is_void((x, y - 1, z), nca_tensor, shape):
-                    ao_values = get_ao((x, y - 1, z), nca_tensor, shape, fixed_axis=1, even=False)
+                    ao_values = get_ao(
+                        (x, y - 1, z), nca_tensor, shape, fixed_axis=1, even=False
+                    )
                     index = add_face(
                         fixed_axis=1,
                         base_vector=np.array([x, y, z], dtype=np.int64),
@@ -190,7 +214,14 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
 
                 # Back face (face_id 4): sample neighbor at z-1
                 if is_void((x, y, z - 1), nca_tensor, shape):
-                    ao_values = get_ao((x, y, z - 1), nca_tensor, shape, fixed_axis=2, even=True, flip=True)
+                    ao_values = get_ao(
+                        (x, y, z - 1),
+                        nca_tensor,
+                        shape,
+                        fixed_axis=2,
+                        even=True,
+                        flip=True,
+                    )
                     index = add_face(
                         fixed_axis=2,
                         base_vector=np.array([x, y, z], dtype=np.int64),

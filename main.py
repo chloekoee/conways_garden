@@ -31,6 +31,7 @@ class VoxelEngine:
         self.clock = pg.time.Clock()
         self.delta_time = 0
         self.time = 0
+        self.time_since_last_step = 0
 
         pg.event.set_grab(True)
         pg.mouse.set_visible(False)
@@ -39,6 +40,8 @@ class VoxelEngine:
         self.is_running = True
         self.paused = False  # Add a paused flag
         self.on_init()
+
+        pg.display.set_caption(f"{self.scene.nca.step :.0f}")
 
     def on_init(self):
         self.textures = Textures(self)
@@ -53,8 +56,12 @@ class VoxelEngine:
 
         self.delta_time = self.clock.tick()
         self.time = pg.time.get_ticks() * 0.001
-        ## To monitor performance
-        pg.display.set_caption(f"{self.clock.get_fps() :.0f}")
+
+        if not self.scene.nca.frozen:
+            if self.time - self.time_since_last_step > SECONDS_PER_STEP:
+                self.time_since_last_step = self.time
+                self.scene.nca.take_step()
+                pg.display.set_caption(f"{self.scene.nca.step :.0f}")
 
     def on_render(self):
         ## Clear the screen
@@ -73,9 +80,10 @@ class VoxelEngine:
                 self.paused = not self.paused
                 pg.mouse.set_visible(self.paused)
                 pg.event.set_grab(not self.paused)
+
             # Only handle player events if not paused
-            # if not self.paused:
-            #     self.player.handle_event(event=event)
+            if not self.paused:
+                self.player.handle_event(event=event)
 
     def run(self):
         while self.is_running:

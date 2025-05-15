@@ -14,8 +14,17 @@ class Player(Camera):
         super().update()
 
     def handle_event(self, event):
+        self.voxel_control(event)
+        self.nca_life_control(event)
+
+    def voxel_control(self, event):
         if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             self.app.scene.nca.voxel_handler.remove_voxel()
+
+    def nca_life_control(self, event):
+        key_state = pg.key.get_pressed()
+        if key_state[pg.K_k]:
+            self.app.scene.nca.toggle_freeze()
 
     def mouse_control(self):
         mouse_dx, mouse_dy = pg.mouse.get_rel()
