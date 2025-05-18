@@ -1,50 +1,33 @@
+from __future__ import annotations
+from typing import Optional
 import pygame as pg
 from camera import Camera
 from settings import *
 
 
 class Player(Camera):
-    def __init__(self, app, position=PLAYER_POS, yaw=-90, pitch=0):
+    def __init__(self, app, position=PLAYER_POS, yaw=0, pitch=0):
         self.app = app
-        super().__init__(position, yaw, pitch)
+        super().__init__(position, yaw, pitch, self.app.aspect_ratio)
+        self.uninitialized = True
 
     def update(self):
-        self.keyboard_control()
-        self.mouse_control()
+        if self.uninitialized is True:
+            self.reset_view()
+            self.uninitialized = False
         super().update()
 
-    def handle_event(self, event):
-        self.voxel_control(event)
-        self.nca_life_control(event)
+    def reset_view(self) -> None:
+        w, h, d = self.app.scene.nca.simulation.shape[1:4]
 
-    def voxel_control(self, event):
-        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-            self.app.scene.nca.voxel_handler.remove_voxel()
+        ## Obtain eye and reference vectors
+        if self.uninitialized:
+            self.position: glm.vec3 = glm.vec3(w * 2, h // 2, d // 2)
+        nca_centre: glm.vec3 = glm.vec3(w // 2, h // 2, d // 2)
 
-    def nca_life_control(self, event):
-        key_state = pg.key.get_pressed()
-        if key_state[pg.K_k]:
-            self.app.scene.nca.toggle_freeze()
+        ## Derive vector pointing from eye to reference
+        direction: glm.make_vec3 = glm.normalize(nca_centre - self.position)
 
-    def mouse_control(self):
-        mouse_dx, mouse_dy = pg.mouse.get_rel()
-        if mouse_dx:
-            self.rotate_yaw(delta_x=mouse_dx * MOUSE_SENSITIVITY)
-        if mouse_dy:
-            self.rotate_pitch(delta_y=mouse_dy * MOUSE_SENSITIVITY)
-
-    def keyboard_control(self):
-        key_state = pg.key.get_pressed()
-        vel = PLAYER_SPEED * self.app.delta_time
-        if key_state[pg.K_w]:
-            self.move_forward(vel)
-        if key_state[pg.K_s]:
-            self.move_back(vel)
-        if key_state[pg.K_d]:
-            self.move_right(vel)
-        if key_state[pg.K_a]:
-            self.move_left(vel)
-        if key_state[pg.K_SPACE]:
-            self.move_up(vel)
-        if key_state[pg.K_LSHIFT]:
-            self.move_down(vel)
+        ## Derive the yaw and pitch
+        self.pitch = glm.asin(glm.clamp(direction.y, -1.0, 1.0))
+        self.yaw = glm.atan(direction.z, direction.x)

@@ -6,10 +6,8 @@ class ShaderProgram:
         self.app = app
         self.ctx = app.ctx
         self.player = app.player
-        # -------- shaders -------- #
         self.nca = self.get_program(shader_name="nca")
         self.voxel_marker = self.get_program(shader_name="voxel_marker")
-        # ------------------------- #
         self.set_uniforms_on_init()
 
     def set_uniforms_on_init(self):
@@ -19,7 +17,6 @@ class ShaderProgram:
         self.nca["face_textures"].value = (0, 1, 2, 3, 4, 5)
 
         self.voxel_marker["m_proj"].write(self.player.m_proj)
-        self.voxel_marker["m_model"].write(glm.mat4())
         self.voxel_marker["u_texture_0"] = 0
 
     def update(self):

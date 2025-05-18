@@ -102,7 +102,17 @@ def add_face(
         vertex[k[0]] += offsets[i, 0]
         vertex[k[1]] += offsets[i, 1]
         v.append(
-        to_uint8(vertex[0], vertex[1], vertex[2], rgba[0], rgba[1], rgba[2], rgba[3], face_id, ao_values[i])
+            to_uint8(
+                vertex[0],
+                vertex[1],
+                vertex[2],
+                rgba[0],
+                rgba[1],
+                rgba[2],
+                rgba[3],
+                face_id,
+                ao_values[i],
+            )
         )
 
     # first triangle uses v0, v1, v2,  second triangle uses v0, v2, v3
@@ -233,5 +243,4 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
                         ao_values=ao_values,
                     )
 
-    verts_written = index // format_size
     return vertex_data[: index + 1]

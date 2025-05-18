@@ -2,7 +2,7 @@ from settings import *
 
 
 class Camera:
-    def __init__(self, position, yaw, pitch):
+    def __init__(self, position, yaw, pitch, aspect_ratio):
         self.position = glm.vec3(position)
 
         self.yaw = glm.radians(yaw)
@@ -13,7 +13,7 @@ class Camera:
         self.right = glm.vec3(1, 0, 0)
         self.forward = glm.vec3(0, 0, -1)
 
-        self.m_proj = glm.perspective(V_FOV, ASPECT_RATIO, NEAR, FAR)
+        self.m_proj = glm.perspective(V_FOV, aspect_ratio, NEAR, FAR)
         self.m_view = glm.mat4()
 
     def update(self):

@@ -3,17 +3,12 @@ import numpy as np
 import glm
 import math
 
-# resolution
-WIN_RES = glm.vec2(1920, 900)
-
 # ray casting
 MAX_RAY_DIST = 6
 
 # camera
-ASPECT_RATIO = WIN_RES.x / WIN_RES.y
 FOV_DEG = 75
 V_FOV = glm.radians(FOV_DEG)  # vertical FOV
-H_FOV = 2 * math.atan(math.tan(V_FOV * 0.5) * ASPECT_RATIO)  # horizontal FOV
 NEAR = 0.1
 FAR = 2000.0
 PITCH_MAX = glm.radians(89)
@@ -21,9 +16,7 @@ PITCH_MAX = glm.radians(89)
 # player
 PLAYER_SPEED = 0.01
 PLAYER_ROT_SPEED = 0.003
-## TODO: dynamically calculate this based on the NCA size
-# PLAYER_POS = glm.vec3(7.5, 17, 7.5)
-PLAYER_POS = glm.vec3(20, 0, 20)
+PLAYER_POS = glm.vec3(20, 5, 0)
 MOUSE_SENSITIVITY = 0.002
 
 # colors

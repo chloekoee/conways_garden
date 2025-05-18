@@ -1,19 +1,15 @@
 from settings import *
-from nca_voxel_handler import NCAVoxelHandler
 from meshes.nca_mesh import NCAMesh
 
 
 class NCA:
     def __init__(self, app):
         self.app = app
-        self.voxel_handler = NCAVoxelHandler(self)
 
         ## TODO: switch to dynamic loading of voxels
-        # simulation_tensor = np.load(f"tensors/pink_orange_voxel.npy")
-        simulation_tensor = np.load(f"tensors/potted_flower.npy")
-        simulation_tensor = simulation_tensor[20:,...]
-
-    
+        simulation_tensor = np.load(f"tensors/pink_orange_voxel.npy")
+        # simulation_tensor = np.load(f"tensors/potted_flower.npy")
+        # simulation_tensor = simulation_tensor[20:, ...]
 
         # Normalise all rgba values to integers between 0 and 255 for memory
         simulation_tensor[..., :4] = np.rint(simulation_tensor[..., :4] * 255).astype(
@@ -29,9 +25,6 @@ class NCA:
         self.mesh: NCAMesh = None
 
         self.build_mesh()
-
-    def update(self):
-        self.voxel_handler.update()
 
     def toggle_freeze(self):
         self.frozen = not self.frozen

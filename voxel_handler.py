@@ -1,22 +1,23 @@
 from settings import *
 
 
-class NCAVoxelHandler:
-    def __init__(self, nca):
-        self.app = nca.app
-        self.nca = nca
+class VoxelHandler:
+    def __init__(self, scene):
+        self.app = scene.app
+        self.nca = scene.nca
 
         # Ray casting result
+        self.voxel_id = None
         self.target_found = False
         self.voxel_position = None
 
         ## this may be used for building/adding blocks
-        self.voxel_normal = glm.ivec3(0)  # None
+        self.voxel_normal = glm.ivec3(0)
 
     def remove_voxel(self):
         if self.target_found:
             x, y, z = self.voxel_position
-            # Remove voxel by setting its alpha channel to 0 if it is filled
+            ## Remove voxel by setting its alpha channel to 0 if it is filled
             if self.nca.state[x, y, z, 3] > 0:
                 self.nca.state[x, y, z, 3] = 0
                 self.nca.mesh.rebuild()
@@ -40,7 +41,6 @@ class NCAVoxelHandler:
         x2, y2, z2 = self.app.player.position + self.app.player.forward * MAX_RAY_DIST
 
         target = glm.ivec3(x1, y1, z1)
-        self.voxel_id = 0
         self.voxel_normal = glm.ivec3(0)
         step_dir = -1
 
