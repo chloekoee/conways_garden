@@ -22,14 +22,15 @@ PITCH_MAX = glm.radians(89)
 PLAYER_SPEED = 0.01
 PLAYER_ROT_SPEED = 0.003
 ## TODO: dynamically calculate this based on the NCA size
-PLAYER_POS = glm.vec3(7.5, 17, 7.5)
+# PLAYER_POS = glm.vec3(7.5, 17, 7.5)
+PLAYER_POS = glm.vec3(20, 0, 20)
 MOUSE_SENSITIVITY = 0.002
 
 # colors
 BG_COLOR = glm.vec3(0.1, 0.16, 0.25)
 
 # nca simulation
-SECONDS_PER_STEP = 2
+SECONDS_PER_STEP = 1
 # offets for calculating vertex position
 TOP = np.array(
     [

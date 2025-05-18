@@ -12,7 +12,7 @@ FACE ID is an enum:
 """
 
 
-# @njit
+@njit
 def to_uint8(x, y, z, r, g, b, a, face_id, ao_id):
     return (
         uint8(x),
@@ -27,7 +27,7 @@ def to_uint8(x, y, z, r, g, b, a, face_id, ao_id):
     )
 
 
-# @njit
+@njit
 def is_void(position, nca_tensor, shape):
     x, y, z = position
     x_dim, y_dim, z_dim = shape
@@ -41,7 +41,7 @@ def is_void(position, nca_tensor, shape):
     return True
 
 
-# @njit
+@njit
 def add_data(vertex_data, index, *vertices):
     for vertex in vertices:
         for attr in vertex:
@@ -50,7 +50,7 @@ def add_data(vertex_data, index, *vertices):
     return index
 
 
-# @njit
+@njit
 def get_ao(position, nca_tensor, shape, fixed_axis, even=True, flip=False):
     x, y, z = position
     neighbours = []
@@ -74,7 +74,7 @@ def get_ao(position, nca_tensor, shape, fixed_axis, even=True, flip=False):
     return (a, b, c, d)
 
 
-# #@njit
+@njit
 def add_face(
     fixed_axis: np.int64,
     base_vector: np.ndarray,
@@ -102,14 +102,14 @@ def add_face(
         vertex[k[0]] += offsets[i, 0]
         vertex[k[1]] += offsets[i, 1]
         v.append(
-            to_uint8(vertex[0], vertex[1], vertex[2], *rgba, face_id, ao_values[i])
+        to_uint8(vertex[0], vertex[1], vertex[2], rgba[0], rgba[1], rgba[2], rgba[3], face_id, ao_values[i])
         )
 
     # first triangle uses v0, v1, v2,  second triangle uses v0, v2, v3
     return add_data(vertex_data, index, v[0], v[1], v[2], v[0], v[2], v[3])
 
 
-# #@njit
+@njit
 def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
     shape = nca_tensor.shape[:3]
     x_dim, y_dim, z_dim = shape

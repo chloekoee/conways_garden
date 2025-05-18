@@ -6,3 +6,8 @@ meshes/__pycache__/base_mesh.cpython-312.pyc
 meshes/__pycache__/chunk_mesh_builder.cpython-312.pyc
 meshes/__pycache__/chunk_mesh.cpython-312.pyc
 world_objects/__pycache__/chunk.cpython-312.pyc
+
+tensors
+*.npy
+*create_test_tensor.py
+create_test_tensor.py
