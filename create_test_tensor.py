@@ -8,6 +8,6 @@ tensor = np.zeros((SIZE, SIZE, SIZE, 4), dtype=np.float32)
 tensor[..., 3] = 1.0
 
 # frame 0: pink (1,0,1)
-tensor[0, ..., :3] = [1.0, 0.0, 0.7]
+tensor[..., :3] = [1.0, 0.0, 0.7]
 
 np.save("tensors/pink_orange_voxel.npy", tensor)

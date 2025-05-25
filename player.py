@@ -18,7 +18,7 @@ class Player(Camera):
         super().update()
 
     def reset_view(self) -> None:
-        w, h, d = self.app.scene.nca.simulation.shape[1:4]
+        w, h, d = self.app.scene.nca.state.shape[0:3]
 
         ## Obtain eye and reference vectors
         if self.uninitialized:

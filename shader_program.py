@@ -8,16 +8,19 @@ class ShaderProgram:
         self.player = app.player
         self.nca = self.get_program(shader_name="nca")
         self.voxel_marker = self.get_program(shader_name="voxel_marker")
+        self.compute = self.get_compute_shader(shader_name="nca_compute")
         self.set_uniforms_on_init()
 
     def set_uniforms_on_init(self):
-
         self.nca["m_proj"].write(self.player.m_proj)
         self.nca["m_model"].write(glm.mat4())
         self.nca["face_textures"].value = (0, 1, 2, 3, 4, 5)
 
         self.voxel_marker["m_proj"].write(self.player.m_proj)
         self.voxel_marker["u_texture_0"] = 0
+
+        self.compute["currentState"].value = 6  ## texture name space
+        self.compute["nextState"].value = 0  ## image name space
 
     def update(self):
         self.nca["m_view"].write(self.player.m_view)
@@ -34,3 +37,10 @@ class ShaderProgram:
             vertex_shader=vertex_shader, fragment_shader=fragment_shader
         )
         return program
+
+    def get_compute_shader(self, shader_name):
+        with open(f"shaders/{shader_name}.glsl", encoding="utf-8") as file:
+            compute_shader = file.read()
+
+        compute_program = self.ctx.compute_shader(compute_shader)
+        return compute_program
