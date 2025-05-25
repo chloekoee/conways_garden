@@ -20,6 +20,7 @@ class VoxelHandler:
             ## Remove voxel by setting its alpha channel to 0 if it is filled
             if self.nca.state[x, y, z, 3] > 0:
                 self.nca.state[x, y, z, 3] = 0
+                self.nca.delete_voxel(x, y, z) ## update the texture representation
                 self.nca.mesh.rebuild()
             self.target_found = False
 

@@ -21,14 +21,14 @@ class NCA:
         self.x, self.y, self.z, _ = seed_state.shape
 
         ## initialise textures for the current and next state
-        self.current_state = self.app.ctx.texture3d(
+        current_state = self.app.ctx.texture3d(
             size=(self.x, self.y, self.z),
             components=4,
             dtype="u1",
             data=seed_state.tobytes(),
         )
 
-        self.next_state = self.app.ctx.texture3d(
+        next_state = self.app.ctx.texture3d(
             size=(self.x, self.y, self.z),
             components=4,
             dtype="u1",
@@ -36,22 +36,33 @@ class NCA:
         )
 
         ## set the textures interpolation to nearest neighbour (no linear interpolation)
-        self.current_state.filter = (mgl.NEAREST, mgl.NEAREST)
-        self.next_state.filter = (mgl.NEAREST, mgl.NEAREST)
+        current_state.filter = (mgl.NEAREST, mgl.NEAREST)
+        next_state.filter = (mgl.NEAREST, mgl.NEAREST)
 
         ## to ping pong between each texture
-        self.state_textures = [self.current_state, self.next_state]
+        self.state_textures = [current_state, next_state]
 
         self.step = 0
         self.frozen = False
+        self.refresh = False
 
         self.m_model = self.get_model_matrix()
         self.mesh: NCAMesh = None
-
+        
         self.build_mesh()
 
     def toggle_freeze(self):
         self.frozen = not self.frozen
+
+    def delete_voxel(self, x, y, z):
+        curr_i, next_i = (self.step % 2), ((self.step + 1) % 2)
+        voxel = bytes(self.state[x,y,z])
+        current_state =  self.state_textures[curr_i]
+        next_state = self.state_textures[next_i]
+        current_state.write(voxel, viewport=(z,y,x,1,1,1))
+        next_state.write(voxel, viewport=(z,y,x,1,1,1))
+        self.build_mesh()
+
     def take_step(self):
         curr_i, next_i = (self.step % 2), ((self.step + 1) % 2)
 
@@ -70,7 +81,7 @@ class NCA:
         self.app.shader_program.compute.run(gx, gy, gz)
 
         ## read back for mesh building
-        raw = self.state_textures[next_i].read()
+        raw = bytearray(self.state_textures[next_i].read())
         self.state = np.frombuffer(raw, dtype=np.uint8).reshape(
             (self.x, self.y, self.z, 4)
         )
@@ -91,3 +102,6 @@ class NCA:
 
     def get_model_matrix(self):
         return glm.mat4(1.0)
+    
+    def set_refresh(self):
+        self.refresh = True

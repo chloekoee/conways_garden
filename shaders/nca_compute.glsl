@@ -14,8 +14,9 @@ void main() {
     // fetch the current values from the sampler
     uvec4 v = texelFetch(currentState, p, 0);
 
-    // increase alpha slightly 
-    v.a = max(v.a - 25u, 0u);
+    // increase alpha slightly
+    v.a = (v.a < 5u) ? 0u : (v.a - 25u);
+    imageStore(nextState, p, v);
 
     imageStore(nextState, p, v);
 }
