@@ -10,69 +10,64 @@ class NCA:
         self.compute_shader = app.shader_program.compute
 
         ## load in seed/initial state
-        seed_state = np.load(f"tensors/pink_orange_voxel.npy")
+        init_state = np.load(f"tensors/pink_orange_voxel.npy").astype(np.float32)
 
-        ## normalise all rgba values to integers between 0 and 255 for memory
-        seed_state[..., :4] = np.rint(seed_state[..., :4] * 255).astype(np.uint8)
-        seed_state = seed_state.astype(np.uint8)
+        self.x, self.y, self.z, self.c = init_state.shape
+        self.total_voxels = self.x * self.y * self.z
 
-        ## set initial state
-        self.state = seed_state
-        self.x, self.y, self.z, _ = seed_state.shape
+        ## initialise ssbo for compute shader
+        byte_length = self.total_voxels * self.c * 4  ## as using float32 not uint8
+        self.buffers = [
+            app.ctx.buffer(init_state.tobytes()),  ## current state
+            app.ctx.buffer(reserve=byte_length),  ## next state
+        ]
+        self.buffers[0].bind_to_storage_buffer(0)
+        self.buffers[1].bind_to_storage_buffer(1)
 
-        ## initialise textures for the current and next state
-        current_state = self.app.ctx.texture3d(
-            size=(self.x, self.y, self.z),
-            components=4,
-            dtype="u1",
-            data=seed_state.tobytes(),
-        )
-
-        next_state = self.app.ctx.texture3d(
-            size=(self.x, self.y, self.z),
-            components=4,
-            dtype="u1",
-            data=None,
-        )
-
-        ## set the textures interpolation to nearest neighbour (no linear interpolation)
-        current_state.filter = (mgl.NEAREST, mgl.NEAREST)
-        next_state.filter = (mgl.NEAREST, mgl.NEAREST)
-
-        ## to ping pong between each texture
-        self.state_textures = [current_state, next_state]
+        self.compute_shader["X"].value = self.x
+        self.compute_shader["Y"].value = self.y
+        self.compute_shader["Z"].value = self.z
 
         self.step = 0
         self.frozen = False
         self.refresh = False
 
+        ## set initial state for mesh generation
+        optimised_state = init_state[..., :4]
+        optimised_state = np.rint(optimised_state * 255).astype(np.uint8)
+        self.state = optimised_state.astype(np.uint8)
+
         self.m_model = self.get_model_matrix()
         self.mesh: NCAMesh = None
-        
+
         self.build_mesh()
 
     def toggle_freeze(self):
         self.frozen = not self.frozen
 
+    def offset(self, x, y, z):
+        return (((x * self.y) + y) * self.z + z) * self.c * 4 - 1  ## float byte offset
+
     def delete_voxel(self, x, y, z):
         curr_i, next_i = (self.step % 2), ((self.step + 1) % 2)
-        voxel = bytes(self.state[x,y,z])
-        current_state =  self.state_textures[curr_i]
-        next_state = self.state_textures[next_i]
-        current_state.write(voxel, viewport=(z,y,x,1,1,1))
-        next_state.write(voxel, viewport=(z,y,x,1,1,1))
+        # partial_voxel = self.state[x,y,z]
+        voxel = np.zeros((1, 1, 1, self.c))
+        # voxel[...,:4] = partial_voxel
+        ## writing out to both, incase next_state has already been computed
+        current_state = self.buffers[curr_i]
+        next_state = self.buffers[next_i]
+
+        idx = self.offset(x, y, z)
+        current_state.write(bytes(voxel), offset=idx)
+        next_state.write(bytes(voxel), offset=idx)
         self.build_mesh()
 
     def take_step(self):
         curr_i, next_i = (self.step % 2), ((self.step + 1) % 2)
 
-        # bind textures into global image slots
-        self.state_textures[curr_i].use(
-            location=6
-        )  ## current state sampler3D (shares namespace with textures)
-        self.state_textures[next_i].bind_to_image(
-            0, read=False, write=True
-        )  ## next state image3D
+        # bind ssbos into global image slots
+        self.buffers[0].bind_to_storage_buffer(curr_i)
+        self.buffers[1].bind_to_storage_buffer(next_i)
 
         ## dispatch enough groups to cover the full (self.x,self.y,self.z) volume
         gx = (self.x + 7) // 8
@@ -81,11 +76,17 @@ class NCA:
         self.app.shader_program.compute.run(gx, gy, gz)
 
         ## read back for mesh building
-        raw = bytearray(self.state_textures[next_i].read())
-        self.state = np.frombuffer(raw, dtype=np.uint8).reshape(
-            (self.x, self.y, self.z, 4)
+        raw = bytearray(self.buffers[next_i].read())
+        state = np.frombuffer(
+            raw, dtype=np.float32
+        ).reshape(  ## TODO: why did we need that reshape
+            (self.x, self.y, self.z, 16)
         )
-
+        ##  crop off the hidden channels, convert all values to 255 for efficient rendering
+        ## normalise all rgba values to integers between 0 and 255 for memory
+        state = state[..., :4]
+        state = np.rint(state * 255).astype(np.uint8)
+        self.state = state.astype(np.uint8)
         ## generate mesh for next state
         self.build_mesh()
         self.step += 1
@@ -102,6 +103,6 @@ class NCA:
 
     def get_model_matrix(self):
         return glm.mat4(1.0)
-    
+
     def set_refresh(self):
         self.refresh = True

@@ -1,4 +1,5 @@
 from settings import *
+from constants.sobel import *
 
 
 class ShaderProgram:
@@ -8,7 +9,7 @@ class ShaderProgram:
         self.player = app.player
         self.nca = self.get_program(shader_name="nca")
         self.voxel_marker = self.get_program(shader_name="voxel_marker")
-        self.compute = self.get_compute_shader(shader_name="nca_compute")
+        self.compute = self.get_compute_shader(shader_name="compute")
         self.set_uniforms_on_init()
 
     def set_uniforms_on_init(self):
@@ -19,8 +20,10 @@ class ShaderProgram:
         self.voxel_marker["m_proj"].write(self.player.m_proj)
         self.voxel_marker["u_texture_0"] = 0
 
-        self.compute["currentState"].value = 6  ## texture name space
-        self.compute["nextState"].value = 0  ## image name space
+        # self.compute["sobelX"].value    = SOBEL_X
+        # self.compute["sobelY"].value    = SOBEL_Y
+        # self.compute["sobelZ"].value    = SOBEL_Z
+        self.compute["identity"].value = IDENTITY
 
     def update(self):
         self.nca["m_view"].write(self.player.m_view)
