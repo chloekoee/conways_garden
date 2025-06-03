@@ -50,13 +50,9 @@ class NCA:
 
     def delete_voxel(self, x, y, z):
         curr_i, next_i = (self.step % 2), ((self.step + 1) % 2)
-        # partial_voxel = self.state[x,y,z]
-        voxel = np.zeros((1, 1, 1, self.c))
-        # voxel[...,:4] = partial_voxel
-        ## writing out to both, incase next_state has already been computed
+        voxel = np.zeros((1, 1, 1, self.c)).astype(np.float32)
         current_state = self.buffers[curr_i]
         next_state = self.buffers[next_i]
-
         idx = self.offset(x, y, z)
         current_state.write(bytes(voxel), offset=idx)
         next_state.write(bytes(voxel), offset=idx)
