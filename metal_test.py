@@ -27,8 +27,9 @@ channels = 16
 total_voxels = X * Y * Z
 flattened_size = X * Y * Z * channels
 
-current_np  = np.ones(flattened_size).astype(np.float32)
-next_np     = np.zeros(flattened_size*4).astype(np.float32) 
+# current_np  = np.ones(flattened_size).astype(np.float32)
+current_np  = np.zeros(flattened_size).astype(np.float32)
+next_np     = np.zeros(flattened_size).astype(np.float32) 
 shape = np.array([X, Y, Z]).astype(np.uint32)
 
 sobelX_np = np.array(
