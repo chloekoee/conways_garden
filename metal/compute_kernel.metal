@@ -1,6 +1,17 @@
 #include <metal_stdlib>
 using namespace metal;
 
+struct StaticResources {
+    constant   float*      sobelX      [[buffer(2)]],
+    constant   float*      sobelY      [[buffer(3)]],
+    constant   float*      sobelZ      [[buffer(4)]],
+    constant   float*      identity    [[buffer(5)]],
+    constant   uint*       shape       [[buffer(6)]],
+    constant   float*      l1_w        [[buffer(7)]],
+    constant   float*      l1_b        [[buffer(8)]],
+    constant   float*      l2_w        [[buffer(9)]],
+};
+
 inline uint computeIndex(uint xi, uint yi, uint zi, uint c,
                         uint X, uint Y, uint Z) {
     uint vol  = 16 * Z * Y;
@@ -49,21 +60,14 @@ inline int aliveMask(uint xi, uint yi, uint zi,
 }
 
 kernel void convolutionKernel(
-    device const float*    current     [[buffer(0)]],
-    device       float*    next        [[buffer(1)]],
-    constant   float*      sobelX      [[buffer(2)]],
-    constant   float*      sobelY      [[buffer(3)]],
-    constant   float*      sobelZ      [[buffer(4)]],
-    constant   float*      identity    [[buffer(5)]],
-    constant   uint*        shape       [[buffer(6)]],
-    constant   float*      l1_w      [[buffer(7)]],
-    constant   float*      l1_b      [[buffer(8)]],
-    constant   float*      l2_w      [[buffer(9)]],
-    uint                   id        [[thread_position_in_grid]]
+    constant        StaticResources&    R           [[buffer(0)]]
+    device const    float*              current     [[buffer(1)]],
+    device          float*              next        [[buffer(2)]],
+    uint                                id          [[thread_position_in_grid]]
 ) {
-    uint X = shape[0];
-    uint Y = shape[1];
-    uint Z = shape[2];
+    uint X = R.shape[0];
+    uint Y = R.shape[1];
+    uint Z = R.shape[2];
 
     uint z = uint(id % Z);
     uint y = uint((id / Z) % Y);
@@ -76,19 +80,19 @@ kernel void convolutionKernel(
     // TODO: stack these into single array 
     float perceptionVector[64];
     for (int c = 0; c < 16; c++) {
-        perceptionVector[(16*0) + c] = convolve3D(x, y, z, c, current, identity, X, Y, Z);
+        perceptionVector[(16*0) + c] = convolve3D(x, y, z, c, current, R.identity, X, Y, Z);
     }
 
     for (int c = 0; c < 16; c++) {
-        perceptionVector[(16*1) + c] = convolve3D(x, y, z, c, current, sobelX, X, Y, Z);
+        perceptionVector[(16*1) + c] = convolve3D(x, y, z, c, current, R.sobelX, X, Y, Z);
     }
     
     for (int c = 0; c < 16; c++) {
-        perceptionVector[(16*2) + c] = convolve3D(x, y, z, c, current, sobelY, X, Y, Z);
+        perceptionVector[(16*2) + c] = convolve3D(x, y, z, c, current, R.sobelY, X, Y, Z);
     }
 
     for (int c = 0; c < 16; c++) {
-        perceptionVector[(16*3) + c] = convolve3D(x, y, z, c, current, sobelZ, X, Y, Z);
+        perceptionVector[(16*3) + c] = convolve3D(x, y, z, c, current, R.sobelZ, X, Y, Z);
     }
 
     // Pass through FCN
@@ -96,15 +100,15 @@ kernel void convolutionKernel(
     for (int c = 0; c < 16; c++){
         float sum = 0.0;
         for (int p = 0; p < 64; p++){
-            sum += l1_w[c * 64 + p] * perceptionVector[p];
+            sum += R.l1_w[c * 64 + p] * perceptionVector[p];
         }
-        hiddenLayer[c] = max(0.0, sum + l1_b[c]);
+        hiddenLayer[c] = max(0.0, sum + R.l1_b[c]);
     }
 
     for (int c = 0; c < 16; c++){
         float sum = 0.0;
         for (int h = 0; h < 16; h++) {
-            sum += l2_w[c * 16 + h] * hiddenLayer[h];
+            sum += R.l2_w[c * 16 + h] * hiddenLayer[h];
         }
         int i = computeIndex(x, y, z, c, X, Y, Z);
         next[i] = current[i] + sum;
