@@ -29,13 +29,11 @@ w = np.load(f"weights/potted_flower.npy", allow_pickle=True).item()
 l1_w, l1_b, l2_w = w['layers.0.weight'], w['layers.0.bias'], w['layers.2.weight']
 
 # current and next states 
-cur = np.ones(NUM_ELEMENTS, dtype=np.float32)
-nxt = np.zeros_like(cur)
+current_array = np.ones(NUM_ELEMENTS, dtype=np.float32)
+next_array = np.zeros_like(current_array)
 
 # make buffers
-bufs = [
-    mtl_buf(cur),
-    mtl_buf(nxt),
+static_buffers = [
     mtl_buf(sobelX.ravel()),
     mtl_buf(sobelY.ravel()),
     mtl_buf(sobelZ.ravel()),
@@ -43,10 +41,11 @@ bufs = [
     mtl_buf(shape),
     mtl_buf(l1_w.ravel()),
     mtl_buf(l1_b.ravel()),
-    mtl_buf(l2_w.ravel()),
+    mtl_buf(l2_w.ravel())
 ]
-offsets = [0] * len(bufs)
-bindings = NSMakeRange(0, len(bufs))
+
+current_buffer = mtl_buf(current_array)
+next_buffer = mtl_buf(next_array)
 
 ## create commands to run kernel 
 # ----------------------------------------------------
@@ -54,10 +53,28 @@ commandQueue = dev.newCommandQueue()
 commandBuffer = commandQueue.commandBuffer()
 computeEncoder = commandBuffer.computeCommandEncoder()
 
+# pipeline state object holding gpu data - like argument layout 
 pso = dev.newComputePipelineStateWithFunction_error_(func, None)[0]
-computeEncoder.setComputePipelineState_(pso)  # set kernel to call
 
-computeEncoder.setBuffers_offsets_withRange_(bufs, offsets, bindings)
+# tells encoder, use this pipeline for all following dispatches
+computeEncoder.setComputePipelineState_(pso)  # TODO
+
+# create argument encoder for static resources 
+# we define an encoder which knows how to pack the struct declared in slot 0 in the kernel, into an MTL buffer 
+arg_enc = func.newArgumentEncoderWithBufferIndex_(0)
+static_arg_buffer = dev.newBufferWithLength_options_(
+    arg_enc.encodedLength(), 
+    Metal.MTLResourceStorageModeShared
+)
+arg_enc.setArgumentBuffer_offset_(static_arg_buffer, 0)
+for i, b in enumerate(static_buffers):
+    arg_enc.setBuffer_offset_atIndex_(b, 0, i)
+
+computeEncoder.setBuffer_offset_atIndex_(static_arg_buffer, 0, 0)
+
+# directly encode dynamic buffers
+computeEncoder.setBuffer_offset_atIndex_(current_buffer, 0, 1)
+computeEncoder.setBuffer_offset_atIndex_(next_buffer, 0, 2)
 
 ## defining work group sizes
 # TODO: can try making it a 3D grid - but may be non uniform size, and this could be unsupported?
@@ -73,7 +90,6 @@ commandBuffer.waitUntilCompleted()
 
 ## read output back out to CPU 
 # ----------------------------------------------------
-output_buffer_ptr = bufs[1].contents()
-output_buffer = output_buffer_ptr.as_buffer(nxt.nbytes)
+output_buffer = next_buffer.contents().as_buffer(next_array.nbytes)
 output_array = np.frombuffer(output_buffer, dtype=np.float32)
 print("Result:", output_array.reshape((X,Y,Z,C)))

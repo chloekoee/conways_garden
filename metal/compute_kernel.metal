@@ -2,14 +2,14 @@
 using namespace metal;
 
 struct StaticResources {
-    constant   float*      sobelX      [[buffer(2)]],
-    constant   float*      sobelY      [[buffer(3)]],
-    constant   float*      sobelZ      [[buffer(4)]],
-    constant   float*      identity    [[buffer(5)]],
-    constant   uint*       shape       [[buffer(6)]],
-    constant   float*      l1_w        [[buffer(7)]],
-    constant   float*      l1_b        [[buffer(8)]],
-    constant   float*      l2_w        [[buffer(9)]],
+    constant   float*      sobelX      [[id(0)]];
+    constant   float*      sobelY      [[id(1)]];
+    constant   float*      sobelZ      [[id(2)]];
+    constant   float*      identity    [[id(3)]];
+    constant   uint3&       shape       [[id(4)]];
+    constant   float*      l1_w        [[id(5)]];
+    constant   float*      l1_b        [[id(6)]];
+    constant   float*      l2_w        [[id(7)]];
 };
 
 inline uint computeIndex(uint xi, uint yi, uint zi, uint c,
@@ -60,7 +60,7 @@ inline int aliveMask(uint xi, uint yi, uint zi,
 }
 
 kernel void convolutionKernel(
-    constant        StaticResources&    R           [[buffer(0)]]
+    constant        StaticResources&    R           [[buffer(0)]],
     device const    float*              current     [[buffer(1)]],
     device          float*              next        [[buffer(2)]],
     uint                                id          [[thread_position_in_grid]]
