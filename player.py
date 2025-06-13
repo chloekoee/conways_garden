@@ -19,14 +19,14 @@ class Player(Camera):
 
     def reset_view(self) -> None:
         w, h, d = self.app.scene.nca.state.shape[0:3]
-
+        sx, sy, sz = self.app.scene.nca.seed_position
         ## Obtain eye and reference vectors
         if self.uninitialized:
             self.position: glm.vec3 = glm.vec3(w * 2, h // 2, d // 2)
-        nca_centre: glm.vec3 = glm.vec3(w // 2, h // 2, d // 2)
+        nca_seed_position: glm.vec3 = glm.vec3(sx, sy, sz)
 
         ## Derive vector pointing from eye to reference
-        direction: glm.make_vec3 = glm.normalize(nca_centre - self.position)
+        direction: glm.make_vec3 = glm.normalize(nca_seed_position - self.position)
 
         ## Derive the yaw and pitch
         self.pitch = glm.asin(glm.clamp(direction.y, -1.0, 1.0))

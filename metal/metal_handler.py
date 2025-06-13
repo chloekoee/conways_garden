@@ -20,6 +20,7 @@ class MetalHandler:
         self.pso = self.dev.newComputePipelineStateWithFunction_error_(self.func, None)[0]
 
     def load_state(self, nca_name):
+        ## TODO: check if need to load it as float32
         state = np.load(f"state/{nca_name}.npy", allow_pickle=True).item()
         l1_w, l1_b, l2_w = (
             state["layers.0.weight"],
@@ -29,6 +30,7 @@ class MetalHandler:
         seed = state["seed"].squeeze(0)  # get rid of batch dimension
         seed = np.swapaxes(seed, 2, 3)  # TODO: check if swapping y and z is correct
         seed = np.moveaxis(seed, 0, 3)
+        self.seed = seed
         seed = np.ascontiguousarray(seed)
 
         X, Y, Z, C = seed.shape
@@ -102,3 +104,9 @@ class MetalHandler:
         return self.dev.newBufferWithBytes_length_options_(
             input_array, input_array.nbytes, self.storage_mode
         )
+    
+    def get_shape(self):
+        return self.shape
+    
+    def get_seed(self):
+        return self.seed
