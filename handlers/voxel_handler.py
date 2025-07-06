@@ -16,7 +16,6 @@ class VoxelHandler:
 
     def remove_voxel(self):
         if self.target_found:
-            print(f"removing {self.voxel_position}")
             x, y, z = self.voxel_position
             ## Remove voxel by setting its alpha channel to 0 if it is filled
             if self.nca.state[x, y, z, 3] > 0:
@@ -34,7 +33,7 @@ class VoxelHandler:
         x_dim, y_dim, z_dim = nca_tensor[..., 3].shape
         if (0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim) and nca_tensor[
             x, y, z, 3
-        ] > 0:  # 0.1
+        ] > 0:
             return True
         return False
 
