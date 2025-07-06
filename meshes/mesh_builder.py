@@ -1,4 +1,4 @@
-from settings import *
+from constants.settings import *
 from numba import uint8
 
 """
@@ -29,11 +29,15 @@ def to_uint8(x, y, z, r, g, b, a, face_id, ao_id):
 
 @njit
 def is_void(position, nca_tensor, shape):
+    ## TODO: make more elegant way to see inner blocks
+    return True
     x, y, z = position
     x_dim, y_dim, z_dim = shape
     if 0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim:
         # if in bounds and the neighbouring alpha value is false
-        if nca_tensor[x, y, z, 3] == 0:
+        # if nca_tensor[x, y, z, 3] == 0:
+        if nca_tensor[x, y, z, 3] < 1:
+
             return True
         # otherwise neighbouring alpha value is alive then don't render this face
         return False
@@ -136,7 +140,9 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
         for y in range(y_dim):
             for z in range(z_dim):
                 # Skip if voxel is empty (alpha channel, index 3, is zero)
-                if nca_tensor[x, y, z, 3] == 0:
+                # if nca_tensor[x, y, z, 3] == 0:
+                if nca_tensor[x, y, z, 3] < 0.1:
+
                     continue
 
                 rgba = nca_tensor[x, y, z, :]
@@ -242,5 +248,98 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
                         face_id=4,
                         ao_values=ao_values,
                     )
+
+    return vertex_data[: index + 1]
+
+
+@njit
+def cube_to_uint8(x, y, z):
+    return (uint8(x), uint8(y), uint8(z))
+
+
+@njit
+def add_cube_face(
+    fixed_axis: np.int64,
+    base_vector: np.ndarray,
+    offsets: np.ndarray,
+    vertex_data: np.ndarray,
+    index: np.int64,
+) -> np.int64:
+    v = []
+    k = [i for i in range(3) if i != fixed_axis]
+    for i in range(4):
+        vertex = base_vector.copy()
+        vertex[k[0]] += offsets[i, 0]
+        vertex[k[1]] += offsets[i, 1]
+        v.append(
+            cube_to_uint8(
+                vertex[0],
+                vertex[1],
+                vertex[2],
+            )
+        )
+
+    # first triangle uses v0, v1, v2,  second triangle uses v0, v2, v3
+    return add_data(vertex_data, index, v[0], v[1], v[2], v[0], v[2], v[3])
+
+
+@njit
+def build_cube_mesh(x, y, z):
+    vertex_data = np.empty(36 * 3, dtype="uint8")
+    index = 0
+
+    # Right face (face_id 2): sample neighbor at x+1
+    index = add_cube_face(
+        fixed_axis=0,
+        base_vector=np.array([x + 1, y, z], dtype=np.int64),
+        offsets=RIGHT,
+        vertex_data=vertex_data,
+        index=index,
+    )
+
+    # Top face (face_id 0): sample neighbor at y+1
+    index = add_cube_face(
+        fixed_axis=1,
+        base_vector=np.array([x, y + 1, z], dtype=np.int64),
+        offsets=TOP,
+        vertex_data=vertex_data,
+        index=index,
+    )
+
+    # Front face (face_id 5): sample neighbor at z+1
+    index = add_cube_face(
+        fixed_axis=2,
+        base_vector=np.array([x, y, z + 1], dtype=np.int64),
+        offsets=FRONT,
+        vertex_data=vertex_data,
+        index=index,
+    )
+
+    # Left face (face_id 3): sample neighbor at x-1
+    index = add_cube_face(
+        fixed_axis=0,
+        base_vector=np.array([x, y, z], dtype=np.int64),
+        offsets=LEFT,
+        vertex_data=vertex_data,
+        index=index,
+    )
+
+    # Bottom face (face_id 1): sample neighbor at y-1
+    index = add_cube_face(
+        fixed_axis=1,
+        base_vector=np.array([x, y, z], dtype=np.int64),
+        offsets=BOTTOM,
+        vertex_data=vertex_data,
+        index=index,
+    )
+
+    # Back face (face_id 4): sample neighbor at z-1
+    index = add_cube_face(
+        fixed_axis=2,
+        base_vector=np.array([x, y, z], dtype=np.int64),
+        offsets=BACK,
+        vertex_data=vertex_data,
+        index=index,
+    )
 
     return vertex_data[: index + 1]

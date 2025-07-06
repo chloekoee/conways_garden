@@ -1,11 +1,13 @@
 import pygame as pg
-from settings import PLAYER_SPEED, MOUSE_SENSITIVITY, SECONDS_PER_STEP
+from constants.settings import *
+import pygame as pg
 
 
 class Controls:
     def __init__(self, app):
         self.app = app
         self.prev_keys = pg.key.get_pressed()
+        self.mouse_position = pg.mouse.get_pos()
 
     def poll(self):
         """
@@ -45,8 +47,11 @@ class Controls:
         # 3) Mouse‐look
         if self.mouse_dx:
             player.rotate_yaw(self.mouse_dx * MOUSE_SENSITIVITY)
+            pg.mouse.set_pos((self.app.cx, self.app.cy))
+
         if self.mouse_dy:
             player.rotate_pitch(self.mouse_dy * MOUSE_SENSITIVITY)
+            pg.mouse.set_pos((self.app.cx, self.app.cy))
 
         # 4) Keyboard movement
         vel = PLAYER_SPEED * player.app.delta_time

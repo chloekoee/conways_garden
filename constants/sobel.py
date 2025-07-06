@@ -1,4 +1,5 @@
 import numpy as np
+
 ## for metal
 sobelX = np.array(
     [
@@ -8,8 +9,8 @@ sobelX = np.array(
     ],
     dtype=np.float32,
 )
-sobelY = -np.rot90(sobelX, k=-1, axes=(0, 1)) 
-sobelZ = np.transpose(sobelX, (2,1,0))
+sobelY = -np.rot90(sobelX, k=-1, axes=(0, 1))
+sobelZ = np.transpose(sobelX, (2, 1, 0))
 
 identity = np.zeros((3, 3, 3), dtype=np.float32)
 identity[1, 1, 1] = 1.0

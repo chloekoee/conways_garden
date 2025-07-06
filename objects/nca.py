@@ -1,12 +1,13 @@
-from settings import *
+from constants.settings import *
 from meshes.nca_mesh import NCAMesh
 import numpy as np
-from metal.metal_handler import MetalHandler
+from handlers.metal_handler import MetalHandler
+
 
 class NCA:
-    def __init__(self, app, nca_name = "donut"):
+    def __init__(self, app, uses_learnable_perception=False, nca_name="static_donut"):
         self.app = app
-        self.metal = MetalHandler(nca_name)
+        self.metal = MetalHandler(nca_name, uses_learnable_perception)
         self.x, self.y, self.z, self.c = self.metal.get_shape()
         self.total_voxels = self.x * self.y * self.z
         self.step = 0
@@ -30,13 +31,14 @@ class NCA:
         self.frozen = not self.frozen
 
     def delete_voxel(self, x, y, z):
-        pass
+        self.metal.overwrite_voxel(x, y, z)
+        self.build_mesh()
 
     def take_step(self):
         next_state = self.metal.compute_next_state()
         next_state = next_state[..., :4]
-        next_state = np.rint(next_state * 255).astype(np.uint8)
-        next_state[...,:] = np.clip(next_state[...,:], 0, 255) 
+        next_state = np.rint(next_state * 255)
+        next_state[..., :] = np.clip(next_state[..., :], 0, 255)
 
         self.state = next_state.astype(np.uint8)
         self.build_mesh()

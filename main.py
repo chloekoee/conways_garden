@@ -1,9 +1,9 @@
 from controls import Controls
-from settings import *
+from constants.settings import *
 import moderngl as mgl
 import pygame as pg
 import sys
-from player import Player
+from perspective.player import Player
 from scene import Scene
 from shader_program import ShaderProgram
 from textures import Textures
@@ -17,6 +17,7 @@ class Engine:
         info = pg.display.Info()
         screen_w, screen_h = info.current_w, info.current_h
         self.resolution = glm.vec2(int(screen_w * 1.0), int(screen_h * 1.0))
+        self.cx, self.cy = screen_w // 2, screen_h // 2
         self.aspect_ratio = self.resolution.x / self.resolution.y
 
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
@@ -42,9 +43,9 @@ class Engine:
         self.time_since_last_step = 0
 
         cx, cy = self.resolution.x // 2, self.resolution.y // 2
-        pg.mouse.set_pos((cx, cy))
         pg.event.set_grab(True)
         pg.mouse.set_visible(False)
+        pg.mouse.set_pos((self.cx, self.cy))
 
         self.is_running = True
         self.paused = False

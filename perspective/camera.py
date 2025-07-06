@@ -1,4 +1,4 @@
-from settings import *
+from constants.settings import *
 
 
 class Camera:

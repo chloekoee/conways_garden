@@ -1,11 +1,5 @@
-from settings import *
+from constants.settings import *
 from constants.sobel import *
-import numpy as np
-try:
-    import objc  # type: ignore
-    import Metal  # type: ignore
-except ImportError:
-    Metal = None
 
 
 class ShaderProgram:
@@ -13,8 +7,11 @@ class ShaderProgram:
         self.app = app
         self.ctx = app.ctx
         self.player = app.player
-        self.nca = self.get_program(shader_name="nca")
-        self.voxel_marker = self.get_program(shader_name="voxel_marker")
+        self.controls = app.controls
+        self.nca = self.get_program(shader_name="nca/nca")
+        self.voxel_marker = self.get_program(shader_name="voxel_marker/voxel_marker")
+        self.crosshair = self.get_program(shader_name="crosshair/crosshair")
+
         # self.compute = self.get_compute_shader(shader_name="compute")
         self.set_uniforms_on_init()
 
@@ -24,6 +21,7 @@ class ShaderProgram:
         self.nca["face_textures"].value = (0, 1, 2, 3, 4, 5)
 
         self.voxel_marker["m_proj"].write(self.player.m_proj)
+        self.voxel_marker["m_model"].write(glm.mat4())
         self.voxel_marker["u_texture_0"] = 0
 
         # self.compute["sobelX"].value    = SOBEL_X

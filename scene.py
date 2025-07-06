@@ -1,7 +1,8 @@
-from settings import *
-from world_objects.nca import NCA
-from world_objects.voxel_marker import VoxelMarker
-from voxel_handler import VoxelHandler
+from constants.settings import *
+from objects.nca import NCA
+from objects.voxel_marker import VoxelMarker
+from objects.crosshair import CrossHair
+from handlers.voxel_handler import VoxelHandler
 
 import moderngl as mgl
 
@@ -12,6 +13,7 @@ class Scene:
         self.nca = NCA(self.app)
         self.voxel_handler = VoxelHandler(self)
         self.voxel_marker = VoxelMarker(self.voxel_handler)
+        self.crosshair = CrossHair(self.app)
 
     def update(self):
         self.voxel_marker.update()
@@ -21,3 +23,4 @@ class Scene:
         self.nca.render()
         self.voxel_marker.render()
         self.app.ctx.disable(mgl.CULL_FACE)
+        self.crosshair.render()

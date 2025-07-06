@@ -1,4 +1,4 @@
-from settings import *
+from constants.settings import *
 from meshes.nca_mesh import NCAMesh
 import moderngl as mgl
 import numpy as np

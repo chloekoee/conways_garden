@@ -6,29 +6,65 @@ from constants.sobel import identity, sobelX, sobelY, sobelZ
 class MetalHandler:
     storage_mode = Metal.MTLResourceStorageModeShared
 
-    def __init__(self, nca_name="donut"):
+    def __init__(self, nca_name, uses_learnable_perception):
+        self.static = False if uses_learnable_perception else True
+
         self.load_kernel()
         self.load_state(nca_name)
         self.bind_static_resources()
 
     def load_kernel(self):
         self.dev = Metal.MTLCreateSystemDefaultDevice()
-        src = open("metal/compute_kernel.metal", encoding="utf-8").read()
+        file_name = (
+            "shaders/nca/static_compute.metal"
+            if self.static
+            else "shaders/nca/dynamic_compute.metal"
+        )
+
+        src = open(file_name, encoding="utf-8").read()
+
         lib, _ = self.dev.newLibraryWithSource_options_error_(src, None, None)
+
         self.func = lib.newFunctionWithName_("convolutionKernel")
         # pipeline state object holding gpu data - like argument layout
-        self.pso = self.dev.newComputePipelineStateWithFunction_error_(self.func, None)[0]
+        self.pso = self.dev.newComputePipelineStateWithFunction_error_(self.func, None)[
+            0
+        ]
 
     def load_state(self, nca_name):
-        ## TODO: check if need to load it as float32
         state = np.load(f"state/{nca_name}.npy", allow_pickle=True).item()
-        l1_w, l1_b, l2_w = (
-            state["layers.0.weight"],
-            state["layers.0.bias"],
-            state["layers.2.weight"],
-        )
+
+        if self.static:
+            l1_w, l1_b, l2_w = (
+                state["layers.0.weight"],
+                state["layers.0.bias"],
+                state["layers.2.weight"],
+            )
+
+            perception_params = [
+                self.mtl_buf(sobelX.ravel()),
+                self.mtl_buf(sobelY.ravel()),
+                self.mtl_buf(sobelZ.ravel()),
+                self.mtl_buf(identity.ravel()),
+            ]
+
+            update_params = [l1_w, l1_b, l2_w]
+        else:
+            pw, l1_w, l1_b, l2_w, l2_b, l3_w = (
+                state["perception_layer.conv.weight"],
+                state["update_network.conv1.weight"],
+                state["update_network.conv1.bias"],
+                state["update_network.conv2.weight"],
+                state["update_network.conv2.bias"],
+                state["update_network.conv3.weight"],
+            )
+            perception_params = [pw]
+            update_params = [l1_w, l1_b, l2_w, l2_b, l3_w]
+
+        update_params = map(lambda p: self.mtl_buf(p.ravel()), update_params)
+
         seed = state["seed"].squeeze(0)  # get rid of batch dimension
-        seed = np.swapaxes(seed, 2, 3)  # TODO: check if swapping y and z is correct
+        seed = np.swapaxes(seed, 2, 3)  # swap z and y
         seed = np.moveaxis(seed, 0, 3)
         self.seed = seed
         seed = np.ascontiguousarray(seed)
@@ -40,14 +76,9 @@ class MetalHandler:
 
         # make buffers
         self.static_buffers = [
-            self.mtl_buf(sobelX.ravel()),
-            self.mtl_buf(sobelY.ravel()),
-            self.mtl_buf(sobelZ.ravel()),
-            self.mtl_buf(identity.ravel()),
+            *perception_params,
             self.mtl_buf(np.array([X, Y, Z], dtype=np.uint32)),
-            self.mtl_buf(l1_w.ravel()),
-            self.mtl_buf(l1_b.ravel()),
-            self.mtl_buf(l2_w.ravel()),
+            *update_params,
         ]
 
         # current and next states
@@ -99,14 +130,26 @@ class MetalHandler:
         # 32 threads per group ? depends on architecture ~ 32?
         threads_per_group = Metal.MTLSizeMake(16, 1, 1)
         return threads_per_grid, threads_per_group
-    
+
     def mtl_buf(self, input_array):
         return self.dev.newBufferWithBytes_length_options_(
             input_array, input_array.nbytes, self.storage_mode
         )
-    
+
+    def overwrite_voxel(self, x, y, z):
+        ptr = self.current_buffer.contents().as_buffer(self.nbytes)
+        float_view = np.frombuffer(ptr, dtype=np.float32)
+        idx = self.offset(x, y, z)
+        C = self.shape[3]
+        float_view[idx : idx + C] = 0.0
+
+    def offset(self, x, y, z):
+        _, Y, Z, C = self.shape
+        # return (((x * Y) + y) * Z + z) * C * 4 - 1  ## float byte offset
+        return (((x * Y) + y) * Z + z) * C  ## float byte offset
+
     def get_shape(self):
         return self.shape
-    
+
     def get_seed(self):
         return self.seed

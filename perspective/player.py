@@ -1,8 +1,6 @@
 from __future__ import annotations
-from typing import Optional
-import pygame as pg
-from camera import Camera
-from settings import *
+from perspective.camera import Camera
+from constants.settings import *
 
 
 class Player(Camera):
