@@ -1,5 +1,6 @@
 from constants.settings import *
 from numba import uint8
+from numba import njit
 
 """
 FACE ID is an enum:
@@ -136,118 +137,136 @@ def build_nca_mesh(nca_tensor: np.ndarray, format_size: int):
 
     index = 0
 
-    for x in range(x_dim):
-        for y in range(y_dim):
-            for z in range(z_dim):
-                # Skip if voxel is empty (alpha channel, index 3, is zero)
-                # if nca_tensor[x, y, z, 3] == 0:
-                if nca_tensor[x, y, z, 3] < 0.1:
-
+    ## Visit voxels from centre of region and spiral outwards, such that the 
+    # outermost voxels are visited last
+    cx, cy, cz = x_dim // 2, y_dim // 2, z_dim // 2
+    R = max(cx, x_dim - 1 - cx, cy, y_dim - 1 - cy, cz, z_dim - 1 - cz)
+    for d in range(0, R + 1):
+        for x in range(cx - d, cx + d + 1):
+            if x < 0 or x >= x_dim:
+                continue
+            for y in range(cy - d, cy + d + 1):
+                if y < 0 or y >= y_dim:
                     continue
+                for z in range(cz - d, cz + d + 1):
+                    if z < 0 or z >= z_dim:
+                        continue
 
-                rgba = nca_tensor[x, y, z, :]
+                    # check if still in bounds
+                    if max(abs(x - cx), abs(y - cy), abs(z - cz)) != d:
+                        continue
+                    
+                    # Skip if voxel is empty (alpha channel, index 3, is zero)
+                    if nca_tensor[x, y, z, 3] < MIN_ALPHA:
+                        continue
 
-                # Right face (face_id 2): sample neighbor at x+1
-                if is_void((x + 1, y, z), nca_tensor, shape):
-                    ao_values = get_ao((x + 1, y, z), nca_tensor, shape, fixed_axis=0)
-                    index = add_face(
-                        fixed_axis=0,
-                        base_vector=np.array([x + 1, y, z], dtype=np.int64),
-                        offsets=RIGHT,
-                        vertex_data=vertex_data,
-                        index=index,
-                        rgba=(rgba),
-                        face_id=2,
-                        ao_values=ao_values,
-                    )
+                    rgba = nca_tensor[x, y, z, :]
 
-                # Top face (face_id 0): sample neighbor at y+1
-                if is_void((x, y + 1, z), nca_tensor, shape):
-                    ao_values = get_ao((x, y + 1, z), nca_tensor, shape, fixed_axis=1)
-                    index = add_face(
-                        fixed_axis=1,
-                        base_vector=np.array([x, y + 1, z], dtype=np.int64),
-                        offsets=TOP,
-                        vertex_data=vertex_data,
-                        index=index,
-                        rgba=(rgba),  # supply your rgba tuple
-                        face_id=0,
-                        ao_values=ao_values,
-                    )
+                    # Right face (face_id 2): sample neighbor at x+1
+                    if is_void((x + 1, y, z), nca_tensor, shape):
+                        ao_values = get_ao(
+                            (x + 1, y, z), nca_tensor, shape, fixed_axis=0
+                        )
+                        index = add_face(
+                            fixed_axis=0,
+                            base_vector=np.array([x + 1, y, z], dtype=np.int64),
+                            offsets=RIGHT,
+                            vertex_data=vertex_data,
+                            index=index,
+                            rgba=(rgba),
+                            face_id=2,
+                            ao_values=ao_values,
+                        )
 
-                # Front face (face_id 5): sample neighbor at z+1
-                if is_void((x, y, z + 1), nca_tensor, shape):
-                    ao_values = get_ao(
-                        (x, y, z + 1),
-                        nca_tensor,
-                        shape,
-                        fixed_axis=2,
-                        even=False,
-                        flip=True,
-                    )
-                    index = add_face(
-                        fixed_axis=2,
-                        base_vector=np.array([x, y, z + 1], dtype=np.int64),
-                        offsets=FRONT,
-                        vertex_data=vertex_data,
-                        index=index,
-                        rgba=(rgba),
-                        face_id=5,
-                        ao_values=ao_values,
-                    )
+                    # Top face (face_id 0): sample neighbor at y+1
+                    if is_void((x, y + 1, z), nca_tensor, shape):
+                        ao_values = get_ao(
+                            (x, y + 1, z), nca_tensor, shape, fixed_axis=1
+                        )
+                        index = add_face(
+                            fixed_axis=1,
+                            base_vector=np.array([x, y + 1, z], dtype=np.int64),
+                            offsets=TOP,
+                            vertex_data=vertex_data,
+                            index=index,
+                            rgba=(rgba),  # supply your rgba tuple
+                            face_id=0,
+                            ao_values=ao_values,
+                        )
 
-                # Left face (face_id 3): sample neighbor at x-1
-                if is_void((x - 1, y, z), nca_tensor, shape):
-                    ao_values = get_ao(
-                        (x - 1, y, z), nca_tensor, shape, fixed_axis=0, even=False
-                    )
-                    index = add_face(
-                        fixed_axis=0,
-                        base_vector=np.array([x, y, z], dtype=np.int64),
-                        offsets=LEFT,
-                        vertex_data=vertex_data,
-                        index=index,
-                        rgba=(rgba),
-                        face_id=3,
-                        ao_values=ao_values,
-                    )
+                    # Front face (face_id 5): sample neighbor at z+1
+                    if is_void((x, y, z + 1), nca_tensor, shape):
+                        ao_values = get_ao(
+                            (x, y, z + 1),
+                            nca_tensor,
+                            shape,
+                            fixed_axis=2,
+                            even=False,
+                            flip=True,
+                        )
+                        index = add_face(
+                            fixed_axis=2,
+                            base_vector=np.array([x, y, z + 1], dtype=np.int64),
+                            offsets=FRONT,
+                            vertex_data=vertex_data,
+                            index=index,
+                            rgba=(rgba),
+                            face_id=5,
+                            ao_values=ao_values,
+                        )
 
-                # Bottom face (face_id 1): sample neighbor at y-1
-                if is_void((x, y - 1, z), nca_tensor, shape):
-                    ao_values = get_ao(
-                        (x, y - 1, z), nca_tensor, shape, fixed_axis=1, even=False
-                    )
-                    index = add_face(
-                        fixed_axis=1,
-                        base_vector=np.array([x, y, z], dtype=np.int64),
-                        offsets=BOTTOM,
-                        vertex_data=vertex_data,
-                        index=index,
-                        rgba=(rgba),
-                        face_id=1,
-                        ao_values=ao_values,
-                    )
+                    # Left face (face_id 3): sample neighbor at x-1
+                    if is_void((x - 1, y, z), nca_tensor, shape):
+                        ao_values = get_ao(
+                            (x - 1, y, z), nca_tensor, shape, fixed_axis=0, even=False
+                        )
+                        index = add_face(
+                            fixed_axis=0,
+                            base_vector=np.array([x, y, z], dtype=np.int64),
+                            offsets=LEFT,
+                            vertex_data=vertex_data,
+                            index=index,
+                            rgba=(rgba),
+                            face_id=3,
+                            ao_values=ao_values,
+                        )
 
-                # Back face (face_id 4): sample neighbor at z-1
-                if is_void((x, y, z - 1), nca_tensor, shape):
-                    ao_values = get_ao(
-                        (x, y, z - 1),
-                        nca_tensor,
-                        shape,
-                        fixed_axis=2,
-                        even=True,
-                        flip=True,
-                    )
-                    index = add_face(
-                        fixed_axis=2,
-                        base_vector=np.array([x, y, z], dtype=np.int64),
-                        offsets=BACK,
-                        vertex_data=vertex_data,
-                        index=index,
-                        rgba=(rgba),
-                        face_id=4,
-                        ao_values=ao_values,
-                    )
+                    # Bottom face (face_id 1): sample neighbor at y-1
+                    if is_void((x, y - 1, z), nca_tensor, shape):
+                        ao_values = get_ao(
+                            (x, y - 1, z), nca_tensor, shape, fixed_axis=1, even=False
+                        )
+                        index = add_face(
+                            fixed_axis=1,
+                            base_vector=np.array([x, y, z], dtype=np.int64),
+                            offsets=BOTTOM,
+                            vertex_data=vertex_data,
+                            index=index,
+                            rgba=(rgba),
+                            face_id=1,
+                            ao_values=ao_values,
+                        )
+
+                    # Back face (face_id 4): sample neighbor at z-1
+                    if is_void((x, y, z - 1), nca_tensor, shape):
+                        ao_values = get_ao(
+                            (x, y, z - 1),
+                            nca_tensor,
+                            shape,
+                            fixed_axis=2,
+                            even=True,
+                            flip=True,
+                        )
+                        index = add_face(
+                            fixed_axis=2,
+                            base_vector=np.array([x, y, z], dtype=np.int64),
+                            offsets=BACK,
+                            vertex_data=vertex_data,
+                            index=index,
+                            rgba=(rgba),
+                            face_id=4,
+                            ao_values=ao_values,
+                        )
 
     return vertex_data[: index + 1]
 

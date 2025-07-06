@@ -18,5 +18,4 @@ class Scene:
 
     def render(self):
         self.nca.render()
-        self.app.ctx.disable(mgl.CULL_FACE)
         self.crosshair.render()

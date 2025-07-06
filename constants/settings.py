@@ -1,8 +1,8 @@
-from numba import njit
 import numpy as np
 import glm
-import math
 
+# minimum transparency for a voxel to be rendered
+MIN_ALPHA = 100 
 # ray casting
 MAX_RAY_DIST = 6
 
@@ -23,7 +23,7 @@ MOUSE_SENSITIVITY = 0.002
 BG_COLOR = glm.vec3(0.1, 0.16, 0.25)
 
 # nca simulation
-SECONDS_PER_STEP = 1
+SECONDS_PER_STEP = 0.5
 # offets for calculating vertex position
 TOP = np.array(
     [

@@ -33,7 +33,7 @@ class VoxelHandler:
         x_dim, y_dim, z_dim = nca_tensor[..., 3].shape
         if (0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim) and nca_tensor[
             x, y, z, 3
-        ] > 0:
+        ] > MIN_ALPHA:
             return True
         return False
 

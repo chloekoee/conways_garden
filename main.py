@@ -31,8 +31,8 @@ class Engine:
         ## Create open GL context
         pg.display.set_mode(self.resolution, flags=pg.OPENGL | pg.DOUBLEBUF)
         self.ctx = mgl.create_context()
-        self.ctx.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE | mgl.BLEND)
-
+        self.ctx.enable(flags=mgl.DEPTH_TEST | mgl.BLEND | mgl.CULL_FACE)
+        self.ctx.depth_func = "<="
         ## Enable automatic garbage collection of unused Open GL objects
         self.ctx.gc_mode = "auto"
 
