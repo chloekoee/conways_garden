@@ -58,9 +58,9 @@ class MetalHandler:
                 state["update_network.conv2.bias"],
                 state["update_network.conv3.weight"],
             )
-            perception_params = [pw]
             update_params = [l1_w, l1_b, l2_w, l2_b, l3_w]
 
+        perception_params = [ self.mtl_buf(pw.ravel()) ]
         update_params = map(lambda p: self.mtl_buf(p.ravel()), update_params)
 
         seed = state["seed"].squeeze(0)  # get rid of batch dimension

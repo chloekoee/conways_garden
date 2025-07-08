@@ -75,32 +75,6 @@ inline int aliveMask(uint xi, uint yi, uint zi,
     }
     return 0;
 }
-// inline int aliveMask(uint xi, uint yi, uint zi,
-//                         device const float* current,
-//                         uint X, uint Y, uint Z) {
-//     // check that in all neighbours, there exist at least one neighbour w alpha > 0.1
-//     for (int ox = -1; ox < 2; ox++) {
-//         int nx = (xi + ox - 1 + X);
-//         if (nx >= 0 && nx < X){ 
-//             for (int oy = -1; oy < 2; oy++) {
-//                 int ny = (yi + oy - 1 + Y);
-//                 if (ny >= 0 && ny < Y){ 
-//                     for (int oz = -1; oz < 2; oz++) {
-//                         int nz = (zi + oz - 1 + Z);
-
-//                         if (nz >= 0 && nz < Z){
-//                             uint idx = computeIndex(uint(nx), uint(ny), uint(nz), 3, X, Y, Z);          
-//                             if (current[idx] > 0.1){
-//                                 return 1;
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     return 0;
-// }
 
 kernel void convolutionKernel(
     constant        StaticResources&    R           [[buffer(0)]],
@@ -129,22 +103,26 @@ kernel void convolutionKernel(
 
     // TODO: check if channels are contiguous or perceptions
     // channels contiguous
-    // float perceptionVector[48];
-    // for (int c = 0; c < 16; c++) {
-    //     for (int p = 0; p < 3; p++){
-    //         int pIdx = (3*c) + p;
-    //         perceptionVector[pIdx] = convolve3D(x, y, z, c, pIdx, R.pw, current, X, Y, Z);
-    //     }
-    // }
-
-    // perceptions contiguous 
     float perceptionVector[48];
-    for (int p = 0; p < 3; p++){
-        for (int c = 0; c < 16; c++) {
-            int pIdx = (16*p) + c;
+    for (int c = 0; c < 16; c++) {
+        for (int p = 0; p < 3; p++){
+            int pIdx = (3*c) + p;
             perceptionVector[pIdx] = convolve3D(x, y, z, c, pIdx, R.pw, current, X, Y, Z);
+            // int i = computeIndex(x, y, z, c, X, Y, Z);
+            // next[i] = perceptionVector[pIdx];
         }
     }
+
+    // // perceptions contiguous 
+    // float perceptionVector[48];
+    // for (int p = 0; p < 3; p++){
+    //     for (int c = 0; c < 16; c++) {
+    //         int pIdx = (16*p) + c;
+    //         perceptionVector[pIdx] = convolve3D(x, y, z, c, pIdx, R.pw, current, X, Y, Z);
+    //         int i = computeIndex(x, y, z, c, X, Y, Z);
+    //         next[i] = perceptionVector[pIdx];
+    //     }
+    // }
 
     // Going from size 48 perception to size 16 hidden layer 1
     float firstLayer[16];
@@ -156,7 +134,7 @@ kernel void convolutionKernel(
         firstLayer[c] = max(0.0, sum + R.l1_b[c]);
     }
     
-    // Going from size 16 hidden layer 1 to size 16 hidden layer 2
+    // // Going from size 16 hidden layer 1 to size 16 hidden layer 2
     float secondLayer[16];
     for (int c = 0; c < 16; c++){
         float sum = 0.0;
@@ -166,7 +144,7 @@ kernel void convolutionKernel(
         secondLayer[c] = max(0.0, sum + R.l2_b[c]);
     }
 
-    // Going from size 16 hidden layer 2 to size 16 output layer
+    // // Going from size 16 hidden layer 2 to size 16 output layer
     uint aliveAfter = 0;
     for (int c = 0; c < 16; c++){
         float sum = 0.0;
@@ -174,9 +152,10 @@ kernel void convolutionKernel(
             sum += R.l3_w[c * 16 + h] * secondLayer[h];
         }
         int i = computeIndex(x, y, z, c, X, Y, Z);
-        next[i] = current[i] + sum;
-        if (next[i] > 0.1){ // &  == 3 
-            uint aliveAfter = 1;
+        next[i] = current[i] + sum; 
+
+        if (next[i] > 0.1){
+            aliveAfter = 1;
         }
     }
 
@@ -187,7 +166,7 @@ kernel void convolutionKernel(
   //#aliveMask(x, y, z, next, X, Y, Z);
 
 
-    if (aliveAfter == 0){ // aliveBefore + aliveAfter < 2
+    if (aliveBefore + aliveAfter < 2){ // aliveBefore + aliveAfter < 2
         for (int c = 0; c < 16; c++){
             next[id*16 + c] = 0; 
         }
