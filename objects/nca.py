@@ -5,7 +5,7 @@ from handlers.metal_handler import MetalHandler
 
 
 class NCA:
-    def __init__(self, app, uses_learnable_perception=False, nca_name="static_donut"):
+    def __init__(self, app, uses_learnable_perception=True, nca_name="nyan_donut"):
         self.app = app
         self.metal = MetalHandler(nca_name, uses_learnable_perception)
         self.x, self.y, self.z, self.c = self.metal.get_shape()
