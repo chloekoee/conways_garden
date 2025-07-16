@@ -27,8 +27,11 @@ class NCA:
 
         self.build_mesh()
 
-    def toggle_freeze(self):
-        self.frozen = not self.frozen
+    def freeze(self):
+        self.frozen = True
+    
+    def unfreeze(self):
+        self.frozen = False
 
     def delete_voxel(self, x, y, z):
         self.metal.overwrite_voxel(x, y, z)

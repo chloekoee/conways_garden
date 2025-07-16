@@ -39,10 +39,10 @@ class Controls:
         for e in self.events:
             if e.type == pg.MOUSEBUTTONDOWN and e.button == 1:
                 player.app.scene.voxel_handler.remove_voxel()
-
-        # 2) “Toggle‐on‐hold” actions
-        if self.keys[pg.K_k]:
-            player.app.scene.nca.toggle_freeze()
+            elif e.type == pg.KEYDOWN and e.key == pg.K_k:
+                self.app.scene.nca.freeze()
+            elif e.type == pg.KEYDOWN and e.key == pg.K_p:
+                self.app.scene.nca.unfreeze()
 
         # 3) Mouse‐look
         if self.mouse_dx:
