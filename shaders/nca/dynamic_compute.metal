@@ -11,20 +11,13 @@ struct StaticResources {
     constant   float*      l3_w        [[id(6)]];
 };
 
-// TODO: old indexing for X Y Z C
+// indexing for X Y Z C
 inline uint computeIndex(uint xi, uint yi, uint zi, uint c,
                         uint X, uint Y, uint Z) {
     uint vol  = 16 * Z * Y;
     uint area = 16 * Z;
     return (xi * vol) + (yi * area) + (zi * 16) + c;
 }
-
-// indexing for C X Y Z
-// inline uint computeIndex(uint xi, uint yi, uint zi, uint ci,
-//                          uint X, uint Y, uint Z) {
-//     // flatten (x,y,z,channel) in row‐major (channel last)
-//      return ((ci * X + xi) * Y + yi) * Z + zi;
-// }
 
 inline float convolve3D(uint xi, uint yi, uint zi, uint c,
                         uint pIdx, 
@@ -39,7 +32,6 @@ inline float convolve3D(uint xi, uint yi, uint zi, uint c,
                 uint ny = (yi + oy + Y - 1) % Y;
                 uint nz = (zi + oz + Z - 1) % Z;
                 uint idx = computeIndex(nx, ny, nz, c, X, Y, Z);
-                // ox * 9 + oy * 3 + oz indexes with size 27 3D kernel 
                 // pIdx indexes which of 48 conv kernels we are using
                 uint kIdx = (pIdx * 27) + ox * 9 + oy * 3 + oz;
                 sum += current[idx] * pw[kIdx];
@@ -66,9 +58,9 @@ inline int aliveMask(uint xi, uint yi, uint zi,
                 uint idx = computeIndex(uint(sx),
                                         uint(sy),
                                         uint(sz),
-                                        /* channel = */ 3,
+                                        3,
                                         X, Y, Z);
-                if (current[idx] > 0.1f) 
+                if (current[idx] > 0.1) 
                     return 1;
             }
         }
@@ -94,35 +86,17 @@ kernel void convolutionKernel(
        return;
     }
 
-    // calcualte pre alive mask 
-    // 1 means neighbourhood index = 1 (neighbours alive)
+    // Calculate pre-alive mask 
     uint aliveBefore = aliveMask(x, y, z, current, X, Y, Z);
 
-    // TODO: ALIVE MASKING PRESTEP
-    // store boolean matrix for alive cell positions
-
-    // TODO: check if channels are contiguous or perceptions
-    // channels contiguous
+    // Calculate perception vector 
     float perceptionVector[48];
     for (int c = 0; c < 16; c++) {
         for (int p = 0; p < 3; p++){
             int pIdx = (3*c) + p;
             perceptionVector[pIdx] = convolve3D(x, y, z, c, pIdx, R.pw, current, X, Y, Z);
-            // int i = computeIndex(x, y, z, c, X, Y, Z);
-            // next[i] = perceptionVector[pIdx];
         }
     }
-
-    // // perceptions contiguous 
-    // float perceptionVector[48];
-    // for (int p = 0; p < 3; p++){
-    //     for (int c = 0; c < 16; c++) {
-    //         int pIdx = (16*p) + c;
-    //         perceptionVector[pIdx] = convolve3D(x, y, z, c, pIdx, R.pw, current, X, Y, Z);
-    //         int i = computeIndex(x, y, z, c, X, Y, Z);
-    //         next[i] = perceptionVector[pIdx];
-    //     }
-    // }
 
     // Going from size 48 perception to size 16 hidden layer 1
     float firstLayer[16];
@@ -134,7 +108,7 @@ kernel void convolutionKernel(
         firstLayer[c] = max(0.0, sum + R.l1_b[c]);
     }
     
-    // // Going from size 16 hidden layer 1 to size 16 hidden layer 2
+    // Going from size 16 hidden layer 1 to size 16 hidden layer 2
     float secondLayer[16];
     for (int c = 0; c < 16; c++){
         float sum = 0.0;
@@ -144,7 +118,7 @@ kernel void convolutionKernel(
         secondLayer[c] = max(0.0, sum + R.l2_b[c]);
     }
 
-    // // Going from size 16 hidden layer 2 to size 16 output layer
+    // Going from size 16 hidden layer 2 to size 16 output layer
     uint aliveAfter = 0;
     for (int c = 0; c < 16; c++){
         float sum = 0.0;
@@ -153,35 +127,18 @@ kernel void convolutionKernel(
         }
         int i = computeIndex(x, y, z, c, X, Y, Z);
         next[i] = current[i] + sum; 
-
+        
+        // Calculate alive post mask 
         if (next[i] > 0.1){
             aliveAfter = 1;
         }
     }
 
-    // ALIVE MASKING POST STEP
-    // need to store boolean matrix for alive cell positions
-
-    // calculate post alive mask 
-  //#aliveMask(x, y, z, next, X, Y, Z);
-
-
-    if (aliveBefore + aliveAfter < 2){ // aliveBefore + aliveAfter < 2
+    // Cell must be alive before and after to be alive in this step  
+    if (aliveBefore + aliveAfter < 2){ 
         for (int c = 0; c < 16; c++){
             next[id*16 + c] = 0; 
         }
     }
-
-    // ALIVE MASKING COMBINE PRE AND POST STEP TO ENSURE ONLY ALIVE CELLS PERSIST
-    // i.e, we do not have random growth appear from no where, encourage growth from 
-    // neighbouring cells (including those wrapped around due to circular padding)
-
-
-    // if (aliveMask(x, y, z, current, X, Y, Z) == 1){
-    //     for (int c = 0; c < 16; c++){
-    //         int i = computeIndex(x, y, z, c, X, Y, Z);
-    //         next[i] = 0; 
-    //     }
-    // }
 }
 
