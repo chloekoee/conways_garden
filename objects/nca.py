@@ -22,10 +22,19 @@ class NCA:
         position = np.where(self.state[..., 3] > 0)
         self.seed_position = position[0][0], position[1][0], position[2][0]
 
-        self.m_model = self.get_model_matrix()
         self.mesh: NCAMesh = None
 
         self.build_mesh()
+
+    def get_shape(self):
+        return self.x, self.y, self.z
+
+    def set_model_matrix(self, model):
+        self.m_model = model
+        self.inv_m_model = glm.inverse(model)
+
+    def get_model_matrix(self):
+        return self.m_model
 
     def toggle_freeze(self):
         self.frozen = not self.frozen
@@ -53,9 +62,6 @@ class NCA:
 
     def set_uniform(self):
         self.mesh.program["m_model"].write(self.m_model)
-
-    def get_model_matrix(self):
-        return glm.mat4(1.0)
 
     def set_refresh(self):
         self.refresh = True

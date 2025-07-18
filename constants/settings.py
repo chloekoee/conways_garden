@@ -2,7 +2,7 @@ import numpy as np
 import glm
 
 # minimum transparency for a voxel to be rendered
-MIN_ALPHA = 100 
+MIN_ALPHA = 10
 # ray casting
 MAX_RAY_DIST = 6
 
@@ -16,11 +16,11 @@ PITCH_MAX = glm.radians(89)
 # player
 PLAYER_SPEED = 0.01
 PLAYER_ROT_SPEED = 0.003
-PLAYER_POS = glm.vec3(20, 5, 0)
+PLAYER_POS = glm.vec3(3, 80, 50 )
 MOUSE_SENSITIVITY = 0.002
 
-# colors
-BG_COLOR = glm.vec3(0.1, 0.16, 0.25)
+# BG_COLOR = glm.vec3(0.1, 0.16, 0.25)
+BG_COLOR = glm.vec3(179/255, 203/255, 255/255)
 
 # nca simulation
 SECONDS_PER_STEP = 0.5

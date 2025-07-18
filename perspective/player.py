@@ -16,11 +16,17 @@ class Player(Camera):
         super().update()
 
     def reset_view(self) -> None:
-        w, h, d = self.app.scene.nca.state.shape[0:3]
         sx, sy, sz = self.app.scene.nca.seed_position
         ## Obtain eye and reference vectors
         if self.uninitialized:
-            self.position: glm.vec3 = glm.vec3(w * 2, h // 2, d // 2)
+            M = glm.mat4(
+                self.app.scene.nca.get_model_matrix()
+            )  # mat3 drops translation row/column
+            self.position = glm.vec3(M[3])  ## want the translation row
+            # TODO: put these into constants
+            self.position.x + 50
+            self.position.y + 20
+            self.position.z = 50
         nca_seed_position: glm.vec3 = glm.vec3(sx, sy, sz)
 
         ## Derive vector pointing from eye to reference

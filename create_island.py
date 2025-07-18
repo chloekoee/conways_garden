@@ -4,7 +4,7 @@ import math
 from opensimplex import noise2
 
 X_SIZE = 30
-Y_SIZE = 20
+Y_SIZE = 40
 Z_SIZE = 30
 
 cx, cz = (X_SIZE / 2.0), (Z_SIZE / 2.0)
@@ -42,8 +42,10 @@ R = min(X_SIZE, Z_SIZE) / 2.0
 cx, cz = (X_SIZE - 1) / 2.0, (Z_SIZE - 1) / 2.0
 R = min(X_SIZE, Z_SIZE) / 2.0
 
-bottom_col = np.array([0.2, 0.2, 0.25])
-top_col = np.array([0.6, 0.6, 0.8])
+bottom_col = np.array([41, 28, 99])
+bottom_col = bottom_col / 255
+top_col = np.array([129, 149, 181])
+top_col = top_col / 255
 noise_amp = 0.05
 alpha_min = 0.3
 f_noise = 0.1
@@ -58,7 +60,7 @@ for x in range(X_SIZE):
         simplex_multiplier = noise2(x, z)
         height *= 1 + 0.5 * simplex_multiplier
         for y in range(int(height)):
-            h = y / float(Y_SIZE)
+            h = y / float(Y_SIZE)  # do 1- to invert the colouring
 
             # sample noise in [0,1]
             n = (noise2(x * f_noise, z * f_noise) + 1) / 2
@@ -76,7 +78,8 @@ for x in range(X_SIZE):
             island[x, y, z, :] = [col[0], col[1], col[2], alpha]
 
 # invert cone to make island
-island = island[:, ::-1, :]
+island = island[:, ::-1, :, :]
+np.save("islands/island.npy", island)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")

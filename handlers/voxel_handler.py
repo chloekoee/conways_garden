@@ -16,7 +16,14 @@ class VoxelHandler:
 
     def remove_voxel(self):
         if self.target_found:
-            x, y, z = self.voxel_position
+            local_pos4 = self.nca.inv_m_model * glm.vec4(
+                glm.vec3(self.voxel_position), 1.0
+            )
+            local_pos = glm.vec3(local_pos4)
+            x = int(round(local_pos.x))
+            y = int(round(local_pos.y))
+            z = int(round(local_pos.z))
+
             ## Remove voxel by setting its alpha channel to 0 if it is filled
             if self.nca.state[x, y, z, 3] > 0:
                 self.nca.state[x, y, z, 3] = 0
@@ -28,7 +35,12 @@ class VoxelHandler:
         self.ray_cast()
 
     def is_filled(self, position):
-        x, y, z = position
+        local_pos4 = self.nca.inv_m_model * glm.vec4(glm.vec3(position), 1.0)
+        local_pos = glm.vec3(local_pos4)
+        x = int(round(local_pos.x))
+        y = int(round(local_pos.y))
+        z = int(round(local_pos.z))
+
         nca_tensor = self.nca.state
         x_dim, y_dim, z_dim = nca_tensor[..., 3].shape
         if (0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim) and nca_tensor[
