@@ -35,55 +35,45 @@ class MetalHandler:
         state = np.load(f"state/{nca_name}.npy", allow_pickle=True).item()
 
         if self.static:
-            l1_w, l1_b, l2_w = (
+            perception_arrays = [sobelX, sobelY, sobelZ, identity]
+            update_arrays = [
                 state["layers.0.weight"],
                 state["layers.0.bias"],
                 state["layers.2.weight"],
-            )
-
-            perception_params = [
-                self.mtl_buf(sobelX.ravel()),
-                self.mtl_buf(sobelY.ravel()),
-                self.mtl_buf(sobelZ.ravel()),
-                self.mtl_buf(identity.ravel()),
             ]
-
-            update_params = [l1_w, l1_b, l2_w]
         else:
-            pw, l1_w, l1_b, l2_w, l2_b, l3_w = (
-                state["perception_layer.conv.weight"],
+            perception_arrays = [state["perception_layer.conv.weight"]]
+            update_arrays = [
                 state["update_network.conv1.weight"],
                 state["update_network.conv1.bias"],
                 state["update_network.conv2.weight"],
                 state["update_network.conv2.bias"],
                 state["update_network.conv3.weight"],
-            )
-            update_params = [l1_w, l1_b, l2_w, l2_b, l3_w]
+            ]
 
-        perception_params = [ self.mtl_buf(pw.ravel()) ]
-        update_params = map(lambda p: self.mtl_buf(p.ravel()), update_params)
+        perception_bufs = []
+        for arr in perception_arrays:
+            a32 = np.ascontiguousarray(arr.astype(np.float32))
+            perception_bufs.append(self.mtl_buf(a32.ravel()))
 
+        update_bufs = []
+        for arr in update_arrays:
+            a32 = np.ascontiguousarray(arr.astype(np.float32))
+            update_bufs.append(self.mtl_buf(a32.ravel()))
         seed = state["seed"].squeeze(0)  # get rid of batch dimension
-        seed = np.swapaxes(seed, 2, 3)  # swap z and y
         seed = np.moveaxis(seed, 0, 3)
         self.seed = seed
         seed = np.ascontiguousarray(seed)
-
-        X, Y, Z, C = seed.shape
-        self.shape = seed.shape
+        X, Y, Z, C = self.seed.shape
+        shape_buf = self.mtl_buf(np.array([X, Y, Z], dtype=np.uint32))
+        self.shape = self.seed.shape
         self.NUM_VOXELS = X * Y * Z
         self.nbytes = seed.nbytes
 
-        # make buffers
-        self.static_buffers = [
-            *perception_params,
-            self.mtl_buf(np.array([X, Y, Z], dtype=np.uint32)),
-            *update_params,
-        ]
+        self.static_buffers = [*perception_bufs, shape_buf, *update_bufs]
 
-        # current and next states
         self.current_buffer = self.mtl_buf(seed)
-        self.next_buffer = self.mtl_buf(np.zeros_like(seed))
+        self.next_buffer = self.mtl_buf(np.zeros_like(seed, dtype=np.float32))
 
     def bind_static_resources(self):
         arg_enc = self.func.newArgumentEncoderWithBufferIndex_(0)

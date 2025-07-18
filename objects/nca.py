@@ -5,7 +5,7 @@ from handlers.metal_handler import MetalHandler
 
 
 class NCA:
-    def __init__(self, app, uses_learnable_perception=True, nca_name="nyan_donut"):
+    def __init__(self, app, uses_learnable_perception=True, nca_name="taiwan_donut"):
         self.app = app
         self.metal = MetalHandler(nca_name, uses_learnable_perception)
         self.x, self.y, self.z, self.c = self.metal.get_shape()
@@ -38,6 +38,7 @@ class NCA:
         self.build_mesh()
 
     def take_step(self):
+        self.step += 1
         next_state = self.metal.compute_next_state()
         next_state = next_state[..., :4]
         next_state = np.rint(next_state * 255)
@@ -45,7 +46,6 @@ class NCA:
 
         self.state = next_state.astype(np.uint8)
         self.build_mesh()
-        self.step += 1
 
     def build_mesh(self):
         self.mesh = NCAMesh(self)
