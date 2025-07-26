@@ -1,5 +1,6 @@
 from constants.settings import *
 from objects.nca import NCA
+from objects.static_nca import StaticNCA
 from objects.island import Island
 from objects.crosshair import CrossHair
 from handlers.voxel_handler import VoxelHandler
@@ -8,7 +9,7 @@ from handlers.voxel_handler import VoxelHandler
 class Scene:
     def __init__(self, app):
         self.app = app
-        self.nca = NCA(self.app)
+        self.nca = StaticNCA(self.app)
         self.voxel_handler = VoxelHandler(self)
         self.island = Island(self.app)
         self.crosshair = CrossHair(self.app)
