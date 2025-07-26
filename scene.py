@@ -18,9 +18,9 @@ class Scene:
         self.voxel_handler.update()
 
     def render(self):
+        self.island.render()
         self.nca.render()
         self.crosshair.render()
-        self.island.render()
 
     def set_model_matrices(self):
         ix, iy, iz = self.island.get_shape()
