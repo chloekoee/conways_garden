@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import math
 from opensimplex import noise2
 
-X_SIZE = 30
+X_SIZE = 60
 Y_SIZE = 40
-Z_SIZE = 30
+Z_SIZE = 60
 
 cx, cz = (X_SIZE / 2.0), (Z_SIZE / 2.0)
 

@@ -13,23 +13,23 @@ class Textures:
 
         # List of filenames with one texture per face.
         # Update these file names as appropriate.
-        face_files = [
-            "top.png",  # face_id 0
-            "bottom.png",  # face_id 1
-            "right.png",  # face_id 2
-            "leftt.png",  # face_id 3
-            "back.png",  # face_id 4
-            "front.png",  # face_id 5
-        ]
-
         # face_files = [
-        #     "frame.png",  # face_id 0
-        #     "frame.png",  # face_id 1
-        #     "frame.png",  # face_id 2
-        #     "frame.png",  # face_id 3
-        #     "frame.png",  # face_id 4
-        #     "frame.png",  # face_id 5
+        #     "top.png",  # face_id 0
+        #     "bottom.png",  # face_id 1
+        #     "right.png",  # face_id 2
+        #     "leftt.png",  # face_id 3
+        #     "back.png",  # face_id 4
+        #     "front.png",  # face_id 5
         # ]
+
+        face_files = [
+            "frame.png",  # face_id 0
+            "frame.png",  # face_id 1
+            "frame.png",  # face_id 2
+            "frame.png",  # face_id 3
+            "frame.png",  # face_id 4
+            "frame.png",  # face_id 5
+        ]
 
         self.face_textures = []
         for i, file in enumerate(face_files):
