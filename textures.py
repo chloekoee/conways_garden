@@ -23,12 +23,12 @@ class Textures:
         # ]
 
         face_files = [
-            "frame.png",  # face_id 0
-            "frame.png",  # face_id 1
-            "frame.png",  # face_id 2
-            "frame.png",  # face_id 3
-            "frame.png",  # face_id 4
-            "frame.png",  # face_id 5
+            "frameless.png",  # face_id 0
+            "frameless.png",  # face_id 1
+            "frameless.png",  # face_id 2
+            "frameless.png",  # face_id 3
+            "frameless.png",  # face_id 4
+            "frameless.png",  # face_id 5
         ]
 
         self.face_textures = []
@@ -37,10 +37,6 @@ class Textures:
             # Bind each to its corresponding texture unit (0 to 5)
             tex.use(location=i)
             self.face_textures.append(tex)
-
-        # voxel marker texture
-        self.texture_0 = self.load("frame.png")
-        self.texture_0.use(location=0)
 
     def load(self, file_name):
         surface = pg.image.load(f"assets/{file_name}")
