@@ -51,7 +51,7 @@ vec3 render(vec2 uv) {
 
     vec3 skyCol = getSky(pos3, rd);    
 
-    float sunFactor = 0.005 / (1.0 - dot(rd, normalize(lightPos)));
+    float sunFactor = 0.01 / (1.0 - dot(rd, normalize(lightPos)));
     vec3  sunColor  = vec3(1.0, 0.3412, 0.102) * 1.0;
 
     // mask out the sun from skyCol
