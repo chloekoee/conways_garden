@@ -3,6 +3,7 @@ from objects.nca import NCA
 from objects.static_nca import StaticNCA
 from objects.island import Island
 from objects.crosshair import CrossHair
+from objects.sky import Sky
 from handlers.voxel_handler import VoxelHandler
 
 
@@ -13,12 +14,14 @@ class Scene:
         self.voxel_handler = VoxelHandler(self)
         self.island = Island(self.app)
         self.crosshair = CrossHair(self.app)
+        self.sky = Sky(self.app)
         self.set_model_matrices()
 
     def update(self):
         self.voxel_handler.update()
 
     def render(self):
+        self.sky.render()
         self.island.render()
         self.nca.render()
         self.crosshair.render()

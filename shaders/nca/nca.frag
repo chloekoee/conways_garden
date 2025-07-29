@@ -24,6 +24,8 @@ void main() {
     float luminance = dot(tex_col, vec3(0.299, 0.587, 0.114));
     tex_col = mix(vec3(luminance), tex_col, sat_boost);
 
+    // decrease brightness
+    tex_col*=0.5;
     tex_col = pow(tex_col, inv_gamma);
     fragColor = vec4(tex_col, voxel_color.a);
 }

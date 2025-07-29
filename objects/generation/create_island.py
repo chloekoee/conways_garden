@@ -42,10 +42,8 @@ R = min(X_SIZE, Z_SIZE) / 2.0
 cx, cz = (X_SIZE - 1) / 2.0, (Z_SIZE - 1) / 2.0
 R = min(X_SIZE, Z_SIZE) / 2.0
 
-bottom_col = np.array([41, 28, 99])
-bottom_col = bottom_col / 255
-top_col = np.array([129, 149, 181])
-top_col = top_col / 255
+top_col = np.array([0.6235, 0.3608, 0.4235])
+bottom_col = np.array([0.0235, 0.0, 0.0])
 noise_amp = 0.05
 alpha_min = 0.3
 f_noise = 0.1

@@ -76,7 +76,7 @@ class Engine:
                 pg.display.set_caption(f"{self.scene.nca.step :.0f}")
 
     def on_render(self):
-        self.ctx.clear(color=BG_COLOR)
+        self.ctx.clear()
         self.scene.render()
         pg.display.flip()
 
