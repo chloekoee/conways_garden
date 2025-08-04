@@ -9,9 +9,29 @@ Z_SIZE = 60
 
 cx, cz = (X_SIZE / 2.0), (Z_SIZE / 2.0)
 
+TIP_COLOR = np.array([179 / 255, 61 / 255, 120 / 255])
+MOSS_COLOUR = np.array([47 / 255, 64 / 255, 20 / 255])
+BASE_COLOR = np.array([64 / 255, 17 / 255, 0 / 255])
+
+earth_base = np.array([0.5, 0.4, 0.3])  # earthy brown
+blend_factor = 0.4  # 0 = original, 1 = earth only
+
+darken = 0.2  # 0 = black, 1 = unchanged
+
+TIP_COLOR = TIP_COLOR * (1 - blend_factor) + earth_base * blend_factor
+BASE_COLOR = BASE_COLOR * (1 - blend_factor) + earth_base * blend_factor
+MOSS_COLOUR = MOSS_COLOUR * (1 - blend_factor) + earth_base * blend_factor
+
+TIP_COLOR *= darken
+BASE_COLOR *= darken
+MOSS_COLOUR *= darken
+# 55, 230, 21
+noise_amp = 0.05
+alpha_min = 0.4
+f_noise = 0.1
+
 
 def get_height(x, z):
-
     # amplitude
     a1 = Y_SIZE
     a2, a4, a8 = a1 * 0.5, a1 * 0.25, a1 * 0.125
@@ -42,11 +62,6 @@ R = min(X_SIZE, Z_SIZE) / 2.0
 cx, cz = (X_SIZE - 1) / 2.0, (Z_SIZE - 1) / 2.0
 R = min(X_SIZE, Z_SIZE) / 2.0
 
-top_col = np.array([0.6235, 0.3608, 0.4235])
-bottom_col = np.array([0.0235, 0.0, 0.0])
-noise_amp = 0.05
-alpha_min = 0.3
-f_noise = 0.1
 
 for x in range(X_SIZE):
     for z in range(Z_SIZE):
@@ -64,12 +79,16 @@ for x in range(X_SIZE):
             n = (noise2(x * f_noise, z * f_noise) + 1) / 2
 
             # interpolate colour and add jitter
-            col = bottom_col + (top_col - bottom_col) * h
+            col = BASE_COLOR + (TIP_COLOR - BASE_COLOR) * h
+            n_green = (noise2(x * 0.18, z * 0.18)) / 1.5
+            # Interpolate between base color and green using n_green
+            col = (1 - n_green) * col + n_green * MOSS_COLOUR
+
             col += (n - 0.5) * noise_amp
             col = np.clip(col, 0, 1)
 
-            # alpha falls off toward tip, plus a bit of noise
-            alpha = 1 - h * (1 - alpha_min)
+            # vary r with the radius
+            alpha = 1 - r * (1 - alpha_min)
             alpha += (n - 0.5) * (noise_amp * 0.5)
             alpha = float(np.clip(alpha, alpha_min, 1))
 
@@ -79,19 +98,37 @@ for x in range(X_SIZE):
 island = island[:, ::-1, :, :]
 np.save("islands/island.npy", island)
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection="3d")
-ax.set_box_aspect(island.shape[0:3] / np.max(island.shape[0:3]))
+## Showing 3D volumetric plot - takes very long
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection="3d")
+# ax.set_box_aspect(island.shape[0:3] / np.max(island.shape[0:3]))
 
-ax.cla()
-ax.set_xlabel("X")
-ax.set_ylabel("Y")
-ax.set_zlabel("Z")
+# ax.cla()
+# ax.set_xlabel("X")
+# ax.set_ylabel("Y")
+# ax.set_zlabel("Z")
 
-ax.voxels(
-    filled=(island[:, :, :, 3] > 0.1),
-    facecolors=np.clip(island[:, :, :, :4], 0, 1),
-)
+# ax.voxels(
+#     filled=(island[:, :, :, 3] > 0.1),
+#     facecolors=np.clip(island[:, :, :, :4], 0, 1),
+# )
 
+# plt.show()
+# plt.close()
+
+## Showing slice of top and side
+
+# Top face (largest y)
+y_top = island.shape[1] - 1
+z_side = island.shape[2] // 2
+birdseye = island[:, y_top, :, :3]
+sideon = island[:, :, z_side, :3]
+
+# Plot top face
+plt.imshow(birdseye)
+plt.axis("off")
 plt.show()
-plt.close()
+
+plt.imshow(sideon)
+plt.axis("off")
+plt.show()

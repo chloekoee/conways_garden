@@ -27,5 +27,5 @@ void main() {
     // decrease brightness
     tex_col*=0.5;
     tex_col = pow(tex_col, inv_gamma);
-    fragColor = vec4(tex_col, voxel_color.a);
+    fragColor = vec4(tex_col,voxel_color.a*1.5);
 }

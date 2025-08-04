@@ -4,7 +4,7 @@ import numpy as np
 
 
 class StaticNCA:
-    def __init__(self, app, nca_name="small_sakura"):
+    def __init__(self, app, nca_name="nyan_sakura_masked"):
         self.app = app
         self.frames = np.load(f"state/static/{nca_name}.npy")
 

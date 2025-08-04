@@ -37,15 +37,15 @@ float fbm(vec2 p) {
 vec3 lightPos = vec3(250.0, 100.0, -300.0) * 4.0;
 
 vec3 getSky(vec3 p, vec3 rd) {
-    vec3 col = vec3(0.102, 0.0431, 0.4431);
+    vec3 col = vec3(0.1373, 0.1059, 0.3176);
     float sun = 0.01 / (1.0 - dot(rd, normalize(lightPos)));
-    col = mix(col, vec3(0.8314, 0.1176, 0.3412), 2.0 * fbm(vec2(10.5 * length(rd.xz), rd.y)));
+    col = mix(col, vec3(0.5804, 0.2431, 0.349), 2.0 * fbm(vec2(10.5 * length(rd.xz), rd.y)));
     col += sun * 0.1;
     return col;
 }
 
 vec3 render(vec2 uv) {
-    vec3 col = vec3(0.3137, 0.1804, 0.5373);
+    vec3 col = vec3(0.4118, 0.2824, 0.6353);
     vec3 rayVS = normalize(vec3(uv * vec2(u_aspect, 1.0), -1.0) * u_focal);    
     vec3 rd    = rot3 * rayVS;
 
