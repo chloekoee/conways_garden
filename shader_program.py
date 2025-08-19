@@ -31,7 +31,7 @@ class ShaderProgram:
     def update(self):
         self.nca["m_view"].write(self.player.m_view)
         self.sky["rot3"].write(glm.mat3(glm.inverse(self.player.m_view)))
-        self.sky["pos3"].write(self.player.position)
+        # self.sky["pos3"].write(self.player.position)
 
     def get_program(self, shader_name):
         with open(f"shaders/{shader_name}.vert") as file:

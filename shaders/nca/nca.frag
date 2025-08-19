@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 layout (location = 0) out vec4 fragColor;
 
@@ -27,5 +27,5 @@ void main() {
     // decrease brightness
     tex_col*=0.5;
     tex_col = pow(tex_col, inv_gamma);
-    fragColor = vec4(tex_col,voxel_color.a*1.5);
+    fragColor = vec4(tex_col, voxel_color.a);
 }

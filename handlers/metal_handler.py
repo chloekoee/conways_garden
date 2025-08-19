@@ -1,5 +1,5 @@
 import numpy as np
-import Metal
+# import Metal
 from constants.sobel import identity, sobelX, sobelY, sobelZ
 
 

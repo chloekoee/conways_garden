@@ -1,5 +1,5 @@
 from constants.settings import *
-from objects.nca import NCA
+# from objects.nca import NCA
 from objects.static_nca import StaticNCA
 from objects.island import Island
 from objects.crosshair import CrossHair
