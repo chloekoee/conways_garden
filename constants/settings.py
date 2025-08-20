@@ -1,6 +1,7 @@
 import numpy as np
 import glm
 
+STARTING_POSITION = glm.vec3(50, 20, 50)
 # minimum transparency for a voxel to be rendered
 MIN_ALPHA = 10
 # ray casting

@@ -7,7 +7,6 @@ class Controls:
     def __init__(self, app):
         self.app = app
         self.prev_keys = pg.key.get_pressed()
-        self.mouse_position = pg.mouse.get_pos()
 
     def poll(self):
         """
@@ -30,6 +29,7 @@ class Controls:
                 self.app.paused = not self.app.paused
                 pg.mouse.set_visible(self.app.paused)
                 pg.event.set_grab(not self.app.paused)
+                self.app.player.reset_view(self.app.player.position)
 
     def apply(self, player):
         """

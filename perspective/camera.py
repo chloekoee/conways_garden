@@ -34,7 +34,7 @@ class Camera:
         self.up = glm.normalize(glm.cross(self.right, self.forward))
 
     def rotate_pitch(self, delta_y):
-        self.pitch -= delta_y
+        self.pitch = np.clip(self.pitch - delta_y, -np.pi / 2, np.pi / 2)
 
     def rotate_yaw(self, delta_x):
         self.yaw += delta_x

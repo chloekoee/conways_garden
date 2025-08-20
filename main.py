@@ -42,13 +42,12 @@ class Engine:
         self.time = 0
         self.time_since_last_step = 0
 
-        cx, cy = self.resolution.x // 2, self.resolution.y // 2
         pg.event.set_grab(True)
-        pg.mouse.set_visible(False)
-        pg.mouse.set_pos((self.cx, self.cy))
+        pg.mouse.set_visible(True)
 
         self.is_running = True
         self.paused = False
+        self.initialised_view = False
         self.on_init()
 
         pg.display.set_caption(f"{self.scene.nca.step :.0f}")
@@ -82,12 +81,16 @@ class Engine:
 
     def run(self):
         while self.is_running:
-            self.controls.poll()
-            self.controls.handle_global()
-            if not self.paused:
-                self.controls.apply(self.player)
-                self.update()
-            self.on_render()
+            if not self.initialised_view:
+                self.player.reset_view()
+                self.initialised_view = True
+            else:
+                self.controls.poll()
+                self.controls.handle_global()
+                if not self.paused:
+                    self.controls.apply(self.player)
+                    self.update()
+                self.on_render()
         pg.quit()
         sys.exit()
 
